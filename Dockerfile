@@ -32,10 +32,6 @@ RUN apt-get update && apt-get install -y \
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
 
-# Create virtual environment and install dependencies
-RUN python -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
-
 # Install dependencies with optimizations
 # First install torch separately (required by detectron2 during build)
 RUN pip install --no-cache-dir --upgrade pip && \
@@ -57,13 +53,13 @@ RUN playwright install-deps chromium && \
 # Stage 3: Runtime image
 FROM base AS runtime
 
-# Copy virtual environment from builder
-COPY --from=builder /opt/venv /opt/venv
+# Copy installed packages from builder
+COPY --from=builder /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --from=builder /root/.cache/ms-playwright /root/.cache/ms-playwright
 
 # Set environment variables
-ENV PATH="/opt/venv/bin:$PATH" \
-    PYTHONUNBUFFERED=1 \
+ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
 # Copy application code
