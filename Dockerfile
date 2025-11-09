@@ -41,8 +41,14 @@ ENV PATH="/opt/venv/bin:$PATH"
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir torch==2.1.2 torchvision==0.16.2
 
+# Install build tools needed by detectron2
+RUN pip install --no-cache-dir ninja wheel
+
 # Then install the rest of the requirements
-RUN pip install --no-cache-dir -r requirements.txt
+# Use --no-build-isolation for detectron2 to access torch during build
+RUN pip install --no-cache-dir \
+    --no-build-isolation \
+    -r requirements.txt
 
 # Install Playwright and browsers
 RUN playwright install-deps chromium && \
