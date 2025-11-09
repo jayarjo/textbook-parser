@@ -1,0 +1,157 @@
+# Docker Compose for Textbook Parser Pipeline
+# Multi-container setup for production use
+
+version: '3.8'
+
+services:
+  # All-in-one service (default)
+  textbook-parser:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    image: textbook-parser:latest
+    container_name: textbook-parser
+    volumes:
+      - ./output:/app/output
+      - ./config:/app/config
+      - ./.env:/app/.env
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: python main.py --config config/default_config.yaml
+    networks:
+      - parser-network
+
+  # Individual service containers (optional, for scaling)
+
+  # Image Retriever service
+  retriever:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.retriever
+    image: textbook-parser-retriever:latest
+    container_name: retriever
+    volumes:
+      - shared-data:/data
+      - ./config:/app/config
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - parser-network
+    profiles:
+      - multi-container
+
+  # Layout Analyzer service
+  layout-analyzer:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.layout-analyzer
+    image: textbook-parser-layout:latest
+    container_name: layout-analyzer
+    volumes:
+      - shared-data:/data
+      - ./config:/app/config
+    environment:
+      - PYTHONUNBUFFERED=1
+    # Uncomment for GPU support
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    networks:
+      - parser-network
+    profiles:
+      - multi-container
+
+  # Image Processor service
+  image-processor:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.image-processor
+    image: textbook-parser-processor:latest
+    container_name: image-processor
+    volumes:
+      - shared-data:/data
+      - ./config:/app/config
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - parser-network
+    profiles:
+      - multi-container
+
+  # OCR Engine service
+  ocr-engine:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ocr
+    image: textbook-parser-ocr:latest
+    container_name: ocr-engine
+    volumes:
+      - shared-data:/data
+      - ./config:/app/config
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - parser-network
+    profiles:
+      - multi-container
+
+  # Illustration Interpreter service
+  illustration-interpreter:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.interpreter
+    image: textbook-parser-interpreter:latest
+    container_name: illustration-interpreter
+    volumes:
+      - shared-data:/data
+      - ./config:/app/config
+      - ./.env:/app/.env
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - parser-network
+    profiles:
+      - multi-container
+
+  # Orchestrator service (coordinates other services)
+  orchestrator:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.orchestrator
+    image: textbook-parser-orchestrator:latest
+    container_name: orchestrator
+    volumes:
+      - shared-data:/data
+      - ./output:/app/output
+      - ./config:/app/config
+      - ./.env:/app/.env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - RETRIEVER_URL=http://retriever:8001
+      - LAYOUT_ANALYZER_URL=http://layout-analyzer:8002
+      - IMAGE_PROCESSOR_URL=http://image-processor:8003
+      - OCR_ENGINE_URL=http://ocr-engine:8004
+      - INTERPRETER_URL=http://illustration-interpreter:8005
+    depends_on:
+      - retriever
+      - layout-analyzer
+      - image-processor
+      - ocr-engine
+      - illustration-interpreter
+    networks:
+      - parser-network
+    profiles:
+      - multi-container
+
+volumes:
+  shared-data:
+    driver: local
+
+networks:
+  parser-network:
+    driver: bridge

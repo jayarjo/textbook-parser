@@ -1,0 +1,49 @@
+# Dockerfile for Image Retriever Service
+# Lightweight container for web automation and image retrieval
+
+FROM python:3.9-slim
+
+# Install Playwright dependencies
+RUN apt-get update && apt-get install -y \
+    wget \
+    curl \
+    libnss3 \
+    libnspr4 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libasound2 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install minimal dependencies
+RUN pip install --no-cache-dir \
+    playwright==1.40.0 \
+    requests==2.31.0 \
+    pillow==10.1.0 \
+    loguru==0.7.2 \
+    pydantic==2.5.3
+
+# Install Playwright browsers
+RUN playwright install chromium
+
+# Copy only necessary source files
+COPY src/__init__.py src/
+COPY src/retriever/ src/retriever/
+
+# Expose port for API (if we add REST API)
+EXPOSE 8001
+
+# Run as non-root user
+RUN useradd -m -u 1000 parser && chown -R parser:parser /app
+USER parser
+
+CMD ["python", "-m", "src.retriever.image_retriever"]

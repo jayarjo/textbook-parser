@@ -1,0 +1,46 @@
+# Dockerfile for Layout Analyzer Service
+# Heavier container with deep learning dependencies
+
+FROM python:3.9-slim
+
+# Install system dependencies for OpenCV and PyTorch
+RUN apt-get update && apt-get install -y \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install PyTorch (CPU version for smaller image)
+RUN pip install --no-cache-dir \
+    torch==2.1.2 \
+    torchvision==0.16.2 \
+    --index-url https://download.pytorch.org/whl/cpu
+
+# Install layout analysis dependencies
+RUN pip install --no-cache-dir \
+    opencv-python==4.9.0.80 \
+    layoutparser[layoutmodels]==0.3.4 \
+    loguru==0.7.2 \
+    pydantic==2.5.3
+
+# Note: Detectron2 installation can be added here if needed
+# RUN pip install 'git+https://github.com/facebookresearch/detectron2.git'
+
+# Copy only necessary source files
+COPY src/__init__.py src/
+COPY src/layout_analyzer/ src/layout_analyzer/
+
+# Expose port for API
+EXPOSE 8002
+
+# Run as non-root user
+RUN useradd -m -u 1000 parser && chown -R parser:parser /app
+USER parser
+
+CMD ["python", "-m", "src.layout_analyzer.layout_analyzer"]

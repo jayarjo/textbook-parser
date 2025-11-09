@@ -1,0 +1,25 @@
+# Dockerfile for Orchestrator Service
+# Coordinates all pipeline services
+
+FROM python:3.9-slim
+
+WORKDIR /app
+
+# Install orchestrator dependencies
+RUN pip install --no-cache-dir \
+    requests==2.31.0 \
+    pydantic==2.5.3 \
+    pyyaml==6.0.1 \
+    loguru==0.7.2 \
+    python-dotenv==1.0.0
+
+# Copy all source files
+COPY src/ src/
+COPY config/ config/
+COPY main.py .
+
+# Run as non-root user
+RUN useradd -m -u 1000 parser && chown -R parser:parser /app
+USER parser
+
+CMD ["python", "main.py"]

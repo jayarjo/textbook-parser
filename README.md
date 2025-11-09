@@ -38,9 +38,9 @@ Book URL → Image Retriever (Playwright)
 
 ### System Requirements
 
-- Python 3.8+
-- Tesseract OCR (for text extraction)
-- Playwright browsers (for web automation)
+- Python 3.8+ OR Docker
+- Tesseract OCR (for text extraction) - included in Docker image
+- Playwright browsers (for web automation) - included in Docker image
 
 ### API Keys (Optional but Recommended)
 
@@ -48,7 +48,48 @@ Book URL → Image Retriever (Playwright)
 - **Anthropic API key** (alternative: Claude with vision)
 - **Google AI API key** (alternative: Gemini Pro Vision)
 
-## 🚀 Installation
+## 🐳 Docker (Recommended)
+
+**Prefer Docker?** Skip the manual installation and use our Docker containers!
+
+### Quick Start with Docker
+
+```bash
+# Build the container
+./docker-build.sh single
+
+# Run with your book URL
+./docker-run.sh single --url "https://example.com/book" --title "My Book"
+
+# Or use a configuration file
+./docker-run.sh single --config config/example_georgian_book.yaml
+```
+
+### Docker Options
+
+We provide **three deployment options**:
+
+1. **Single Container** (recommended) - All-in-one, easy to use
+   ```bash
+   ./docker-build.sh single
+   ./docker-run.sh single --url "https://example.com/book"
+   ```
+
+2. **Multi-Container** - Production setup with service isolation
+   ```bash
+   ./docker-build.sh multi
+   ./docker-run.sh multi
+   ```
+
+3. **GPU-Enabled** - Faster processing with GPU acceleration
+   ```bash
+   ./docker-build.sh gpu
+   ./docker-run.sh gpu --config config/my_book.yaml
+   ```
+
+**📖 See [DOCKER.md](DOCKER.md) for complete Docker documentation**
+
+## 🚀 Installation (Manual)
 
 ### 1. Clone the Repository
 

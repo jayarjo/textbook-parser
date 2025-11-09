@@ -1,0 +1,39 @@
+# Dockerfile for OCR Engine Service
+# Tesseract and PaddleOCR for text extraction
+
+FROM python:3.9-slim
+
+# Install Tesseract OCR with Georgian support
+RUN apt-get update && apt-get install -y \
+    tesseract-ocr \
+    tesseract-ocr-kat \
+    tesseract-ocr-eng \
+    tesseract-ocr-rus \
+    libtesseract-dev \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install OCR dependencies
+RUN pip install --no-cache-dir \
+    pytesseract==0.3.10 \
+    paddleocr==2.7.0.3 \
+    paddlepaddle==2.6.0 \
+    pillow==10.1.0 \
+    loguru==0.7.2 \
+    pydantic==2.5.3
+
+# Copy only necessary source files
+COPY src/__init__.py src/
+COPY src/ocr_engine/ src/ocr_engine/
+
+# Expose port for API
+EXPOSE 8004
+
+# Run as non-root user
+RUN useradd -m -u 1000 parser && chown -R parser:parser /app
+USER parser
+
+CMD ["python", "-m", "src.ocr_engine.ocr_engine"]

@@ -1,0 +1,33 @@
+# Dockerfile for Image Processor Service
+# Image manipulation and enhancement
+
+FROM python:3.9-slim
+
+# Install image processing dependencies
+RUN apt-get update && apt-get install -y \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install minimal dependencies
+RUN pip install --no-cache-dir \
+    pillow==10.1.0 \
+    opencv-python==4.9.0.80 \
+    numpy==1.24.3 \
+    loguru==0.7.2 \
+    pydantic==2.5.3
+
+# Copy only necessary source files
+COPY src/__init__.py src/
+COPY src/image_processor/ src/image_processor/
+
+# Expose port for API
+EXPOSE 8003
+
+# Run as non-root user
+RUN useradd -m -u 1000 parser && chown -R parser:parser /app
+USER parser
+
+CMD ["python", "-m", "src.image_processor.image_processor"]

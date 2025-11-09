@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# Output directories
+output/
+outputs/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env
+
+# Documentation (not needed in container)
+*.md
+!README.md
+
+# Tests
+tests/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*~
+
+# Model cache
+models/
+.cache/
+
+# Docker files (don't need these in the image)
+Dockerfile*
+docker-compose.yml
+.dockerignore
+docker-build.sh
+docker-run.sh
+
+# Examples (not needed in production)
+examples/
+
+# Config (mounted separately)
+config/
