@@ -1,0 +1,44 @@
+# Example Configuration for Georgian Textbook
+
+book_url: "https://example.com/georgian-textbook"
+book_title: "Georgian History Textbook"
+
+output_dir: "output/georgian_book"
+
+# Image Retriever
+retriever:
+  headless: true
+  timeout: 45000  # Longer timeout for slower connections
+  max_retries: 5
+  wait_for_images: 3000
+
+# Layout Analyzer
+layout_analyzer:
+  model_name: "lp://PubLayNet/mask_rcnn_X_101_32x8d_FPN_3x/config"
+  confidence_threshold: 0.6  # Higher threshold for better accuracy
+  device: "cpu"
+
+# Image Processor
+image_processor:
+  mask_color: [255, 255, 255]
+  padding: 10  # More padding for Georgian text
+
+# OCR - Focus on Georgian
+ocr:
+  engine: "tesseract"
+  languages: ["kat", "eng"]  # Georgian primary, English secondary
+  tesseract_config: "--psm 6 -c preserve_interword_spaces=1"
+  confidence_threshold: 65.0
+
+# Illustration Interpreter
+illustration_interpreter:
+  provider: "openai"
+  model: "gpt-4-vision-preview"
+  max_tokens: 600
+  temperature: 0.5  # Lower temperature for more focused descriptions
+
+# Notebook Integration
+notebook_integration:
+  enabled: true
+  credentials_path: null
+  notebook_id: null

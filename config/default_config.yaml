@@ -1,0 +1,52 @@
+# Default Configuration for Textbook Parser Pipeline
+
+# Book Information
+book_url: null  # Set this to your book viewer URL
+book_title: "untitled_book"
+
+# Output Directory
+output_dir: "output"
+
+# Image Retriever Configuration
+retriever:
+  headless: true
+  timeout: 30000  # milliseconds
+  max_retries: 3
+  wait_for_images: 2000  # milliseconds
+  user_agent: null
+
+# Layout Analyzer Configuration
+layout_analyzer:
+  model_name: "lp://PubLayNet/mask_rcnn_X_101_32x8d_FPN_3x/config"
+  confidence_threshold: 0.5
+  device: "cpu"  # or "cuda" for GPU
+
+# Image Processor Configuration
+image_processor:
+  mask_color: [255, 255, 255]  # White
+  padding: 5
+
+# OCR Configuration
+ocr:
+  engine: "tesseract"  # or "paddleocr"
+  languages: ["kat", "eng"]  # Georgian and English
+  tesseract_config: "--psm 6"
+  confidence_threshold: 60.0
+
+# Illustration Interpreter Configuration
+illustration_interpreter:
+  provider: "openai"  # or "anthropic", "google"
+  model: "gpt-4-vision-preview"
+  max_tokens: 500
+  temperature: 0.7
+
+# Google Notebook Integration
+notebook_integration:
+  enabled: false
+  credentials_path: null
+  notebook_id: null
+
+# API Keys (override with environment variables)
+# OPENAI_API_KEY
+# ANTHROPIC_API_KEY
+# GOOGLE_API_KEY
