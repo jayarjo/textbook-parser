@@ -2,7 +2,7 @@
 # Optimized for size and build speed
 
 # Stage 1: Base image with system dependencies
-FROM python:3.9-slim as base
+FROM python:3.9-slim AS base
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Stage 2: Python dependencies builder
-FROM base as builder
+FROM base AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -45,7 +45,7 @@ RUN playwright install-deps chromium && \
     playwright install chromium
 
 # Stage 3: Runtime image
-FROM base as runtime
+FROM base AS runtime
 
 # Copy virtual environment from builder
 COPY --from=builder /opt/venv /opt/venv
@@ -69,7 +69,7 @@ WORKDIR /app
 CMD ["python", "main.py", "--help"]
 
 # Stage 4: GPU-enabled version (optional)
-FROM runtime as gpu
+FROM runtime AS gpu
 
 # Install CUDA dependencies (if needed for GPU acceleration)
 RUN apt-get update && apt-get install -y \
