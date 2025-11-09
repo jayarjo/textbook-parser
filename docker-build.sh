@@ -56,12 +56,12 @@ elif [ "$MODE" == "gpu" ]; then
 elif [ "$MODE" == "multi" ]; then
     print_info "Building multi-container setup..."
 
-    docker-compose build
+    docker compose build
 
     print_success "All service containers built successfully!"
     echo ""
     echo "To run:"
-    echo "  docker-compose --profile multi-container up"
+    echo "  docker compose --profile multi-container up"
 
 elif [ "$MODE" == "all" ]; then
     print_info "Building all container variants..."
@@ -82,7 +82,7 @@ elif [ "$MODE" == "all" ]; then
 
     # Build multi-container setup
     print_info "Building multi-container setup..."
-    docker-compose build
+    docker compose build
     print_success "Multi-container setup built"
 
     print_success "All containers built successfully!"

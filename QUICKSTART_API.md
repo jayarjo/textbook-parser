@@ -9,7 +9,7 @@ This guide shows you how to use the unified REST API architecture to process tex
 ./docker-build.sh multi
 
 # Start all services
-docker-compose --profile multi-container up
+docker compose --profile multi-container up
 ```
 
 **Services will start on:**
@@ -168,7 +168,7 @@ COPY custom_ocr.py .
 CMD ["uvicorn", "custom_ocr:app", "--host", "0.0.0.0", "--port", "8004"]
 ```
 
-3. **Update docker-compose.yml**:
+3. **Update docker compose.yml**:
 
 ```yaml
 services:
@@ -186,7 +186,7 @@ services:
 4. **Rebuild and restart**:
 
 ```bash
-docker-compose --profile multi-container up --build ocr-engine
+docker compose --profile multi-container up --build ocr-engine
 ```
 
 **That's it!** The orchestrator and other services will automatically use your custom OCR implementation because it follows the same API interface.
@@ -195,23 +195,23 @@ docker-compose --profile multi-container up --build ocr-engine
 
 ```bash
 # Scale OCR to handle more load
-docker-compose --profile multi-container up --scale ocr-engine=3
+docker compose --profile multi-container up --scale ocr-engine=3
 
 # Scale interpreter for many illustrations
-docker-compose --profile multi-container up --scale interpreter=2
+docker compose --profile multi-container up --scale interpreter=2
 ```
 
 ## 📊 Monitor Services
 
 ```bash
 # View all logs
-docker-compose logs -f
+docker compose logs -f
 
 # View specific service logs
-docker-compose logs -f ocr-engine
+docker compose logs -f ocr-engine
 
 # Check service status
-docker-compose ps
+docker compose ps
 ```
 
 ## 🧪 Test Individual Service
@@ -243,7 +243,7 @@ docker exec -it ocr-engine /bin/bash
 curl http://localhost:8004/health
 
 # View Python errors
-docker-compose logs ocr-engine | grep -i error
+docker compose logs ocr-engine | grep -i error
 ```
 
 ## 📁 Access Processed Files
@@ -340,19 +340,19 @@ As long as your service implements the API contract defined in `API.md`, it will
 
 ```bash
 # Check logs
-docker-compose logs
+docker compose logs
 
 # Rebuild from scratch
-docker-compose down
-docker-compose --profile multi-container build --no-cache
-docker-compose --profile multi-container up
+docker compose down
+docker compose --profile multi-container build --no-cache
+docker compose --profile multi-container up
 ```
 
 ### Service returns 500 error
 
 ```bash
 # Check service logs
-docker-compose logs service-name
+docker compose logs service-name
 
 # Check if service is healthy
 curl http://localhost:PORT/health

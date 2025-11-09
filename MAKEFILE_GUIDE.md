@@ -52,8 +52,8 @@ make health             # Verify they're running
 make docs               # Open API documentation
 
 # Make code changes, then rebuild specific service
-docker-compose build ocr-engine
-docker-compose restart ocr-engine
+docker compose build ocr-engine
+docker compose restart ocr-engine
 
 # View logs
 make logs-ocr
@@ -236,7 +236,7 @@ cat /data/notebook_export/notebook_source.md
 make up-d
 
 # Stop the default OCR service
-docker-compose stop ocr-engine
+docker compose stop ocr-engine
 
 # Build and run your custom OCR
 cd custom-services/my-ocr
@@ -253,7 +253,7 @@ make test-ocr
 # View logs
 docker logs -f ocr-engine
 
-# When working, update docker-compose.yml to use it permanently
+# When working, update docker compose.yml to use it permanently
 ```
 
 ### Example 3: Batch Process Multiple Books
@@ -352,11 +352,11 @@ make ps
 
 ```bash
 # Restart just one service after code changes
-docker-compose restart ocr-engine
+docker compose restart ocr-engine
 
 # Or rebuild and restart
-docker-compose build ocr-engine
-docker-compose restart ocr-engine
+docker compose build ocr-engine
+docker compose restart ocr-engine
 ```
 
 ### Tip 3: Quick Health Check Loop
@@ -426,10 +426,10 @@ sleep 10
 make health
 
 # Check individual service
-docker-compose logs ocr-engine
+docker compose logs ocr-engine
 
 # Restart problematic service
-docker-compose restart ocr-engine
+docker compose restart ocr-engine
 ```
 
 ### Problem: Out of disk space

@@ -639,7 +639,7 @@ curl -X POST http://localhost:8004/extract \
 
 ### Step 4: Update Docker Compose
 
-Replace the service in `docker-compose.yml`:
+Replace the service in `docker compose.yml`:
 
 ```yaml
 services:
@@ -656,7 +656,7 @@ services:
 ### Step 5: Deploy and Test
 
 ```bash
-docker-compose --profile multi-container up
+docker compose --profile multi-container up
 ```
 
 ---
@@ -716,9 +716,9 @@ Ensure your service works with orchestrator:
 
 ```bash
 # Full pipeline test
-docker-compose --profile multi-container up
+docker compose --profile multi-container up
 # Monitor logs for errors
-docker-compose logs -f
+docker compose logs -f
 ```
 
 ---
@@ -785,7 +785,7 @@ ENV GOOGLE_APPLICATION_CREDENTIALS=/app/credentials.json
 CMD ["uvicorn", "custom_ocr_service:app", "--host", "0.0.0.0", "--port", "8004"]
 ```
 
-### Update docker-compose.yml
+### Update docker compose.yml
 
 ```yaml
 services:
@@ -826,7 +826,7 @@ http://localhost:8002/docs  # Layout analyzer Swagger UI
 - **Full source code**: See `src/api/` directory
 - **Schema definitions**: `src/api/schemas.py`
 - **Example implementations**: Each service in `src/api/*_service.py`
-- **Docker configuration**: `docker-compose.yml`
+- **Docker configuration**: `docker compose.yml`
 
 For questions or issues with implementing custom services, please open a GitHub issue.
 

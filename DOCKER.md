@@ -41,7 +41,7 @@ We provide **three deployment options**:
 ### 2. Multi-Container Setup
 - **Best for**: Production, scaling, processing multiple books
 - **Pros**: Smaller individual images, can scale services independently, better resource isolation
-- **Cons**: More complex setup, requires docker-compose
+- **Cons**: More complex setup, requires docker compose
 - **Use when**: You need to process many books or scale specific steps
 
 ### 3. GPU-Enabled Container
@@ -112,7 +112,7 @@ The multi-container setup splits the pipeline into separate services:
 ./docker-build.sh multi
 
 # Or manually
-docker-compose build
+docker compose build
 ```
 
 ### Run
@@ -122,26 +122,26 @@ docker-compose build
 ./docker-run.sh multi
 
 # Or manually
-docker-compose --profile multi-container up
+docker compose --profile multi-container up
 ```
 
 ### Run in Background
 
 ```bash
-docker-compose --profile multi-container up -d
+docker compose --profile multi-container up -d
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 
 # Stop services
-docker-compose --profile multi-container down
+docker compose --profile multi-container down
 ```
 
 ### Scale Individual Services
 
 ```bash
 # Scale OCR engine to 3 instances
-docker-compose --profile multi-container up --scale ocr-engine=3
+docker compose --profile multi-container up --scale ocr-engine=3
 ```
 
 ## GPU Support
@@ -255,13 +255,13 @@ We use profiles to avoid running all containers by default:
 
 ```bash
 # Run single container (default)
-docker-compose up
+docker compose up
 
 # Run multi-container setup
-docker-compose --profile multi-container up
+docker compose --profile multi-container up
 
 # Run specific services
-docker-compose --profile multi-container up retriever ocr-engine
+docker compose --profile multi-container up retriever ocr-engine
 ```
 
 ## Performance Optimization
@@ -366,9 +366,9 @@ Check logs:
 docker logs <container-id>
 
 # For multi-container
-docker-compose logs -f
-docker-compose logs retriever
-docker-compose logs ocr-engine
+docker compose logs -f
+docker compose logs retriever
+docker compose logs ocr-engine
 ```
 
 ## Best Practices
@@ -386,14 +386,14 @@ Remove unused Docker resources:
 
 ```bash
 # Remove all containers
-docker-compose down
+docker compose down
 
 # Remove images
 docker rmi textbook-parser:latest
 docker rmi textbook-parser:gpu
 
 # Remove all multi-container images
-docker-compose down --rmi all
+docker compose down --rmi all
 
 # Prune system (be careful!)
 docker system prune -a
@@ -405,15 +405,15 @@ docker system prune -a
 
 ```bash
 docker swarm init
-docker stack deploy -c docker-compose.yml textbook-parser
+docker stack deploy -c docker compose.yml textbook-parser
 ```
 
 ### Using Kubernetes
 
-Convert docker-compose to Kubernetes manifests:
+Convert docker compose to Kubernetes manifests:
 
 ```bash
-kompose convert -f docker-compose.yml
+kompose convert -f docker compose.yml
 kubectl apply -f .
 ```
 
@@ -433,6 +433,6 @@ For Docker-specific issues:
 3. Check existing GitHub issues
 4. Create a new issue with:
    - Docker version (`docker --version`)
-   - docker-compose version
+   - docker compose version
    - Full error message
    - Steps to reproduce

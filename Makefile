@@ -44,43 +44,43 @@ build-all: ## Build all container variants (single, multi, gpu)
 
 rebuild: ## Rebuild all services from scratch (no cache)
 	@echo "$(YELLOW)Rebuilding all services (no cache)...$(NC)"
-	docker-compose build --no-cache
+	docker compose build --no-cache
 	@echo "$(GREEN)✓ Services rebuilt$(NC)"
 
 ##@ Docker Run
 
 up: ## Start all multi-container services
 	@echo "$(YELLOW)Starting all services...$(NC)"
-	docker-compose --profile multi-container up
+	docker compose --profile multi-container up
 
 up-d: ## Start all services in detached mode
 	@echo "$(YELLOW)Starting all services (detached)...$(NC)"
-	docker-compose --profile multi-container up -d
+	docker compose --profile multi-container up -d
 	@echo "$(GREEN)✓ Services started$(NC)"
 	@echo "Run 'make logs' to view logs"
 
 down: ## Stop all services
 	@echo "$(YELLOW)Stopping all services...$(NC)"
-	docker-compose --profile multi-container down
+	docker compose --profile multi-container down
 	@echo "$(GREEN)✓ Services stopped$(NC)"
 
 restart: ## Restart all services
 	@echo "$(YELLOW)Restarting services...$(NC)"
-	docker-compose --profile multi-container restart
+	docker compose --profile multi-container restart
 	@echo "$(GREEN)✓ Services restarted$(NC)"
 
 ##@ Service Management
 
 scale-ocr: ## Scale OCR service (usage: make scale-ocr N=3)
 	@echo "$(YELLOW)Scaling OCR engine to $(N) instances...$(NC)"
-	docker-compose --profile multi-container up -d --scale ocr-engine=$(N)
+	docker compose --profile multi-container up -d --scale ocr-engine=$(N)
 
 scale-interpreter: ## Scale interpreter service (usage: make scale-interpreter N=2)
 	@echo "$(YELLOW)Scaling interpreter to $(N) instances...$(NC)"
-	docker-compose --profile multi-container up -d --scale interpreter=$(N)
+	docker compose --profile multi-container up -d --scale interpreter=$(N)
 
 ps: ## Show running services
-	@docker-compose ps
+	@docker compose ps
 
 stats: ## Show resource usage statistics
 	@docker stats
@@ -88,25 +88,25 @@ stats: ## Show resource usage statistics
 ##@ Logs & Debugging
 
 logs: ## View logs from all services
-	docker-compose logs -f
+	docker compose logs -f
 
 logs-orchestrator: ## View orchestrator logs
-	docker-compose logs -f orchestrator
+	docker compose logs -f orchestrator
 
 logs-retriever: ## View retriever logs
-	docker-compose logs -f retriever
+	docker compose logs -f retriever
 
 logs-layout: ## View layout analyzer logs
-	docker-compose logs -f layout-analyzer
+	docker compose logs -f layout-analyzer
 
 logs-processor: ## View image processor logs
-	docker-compose logs -f image-processor
+	docker compose logs -f image-processor
 
 logs-ocr: ## View OCR engine logs
-	docker-compose logs -f ocr-engine
+	docker compose logs -f ocr-engine
 
 logs-interpreter: ## View interpreter logs
-	docker-compose logs -f illustration-interpreter
+	docker compose logs -f illustration-interpreter
 
 shell-orchestrator: ## Open shell in orchestrator container
 	docker exec -it orchestrator /bin/bash
@@ -160,7 +160,7 @@ docs: ## Open API documentation in browser
 
 clean: ## Stop services and remove containers
 	@echo "$(YELLOW)Cleaning up containers...$(NC)"
-	docker-compose --profile multi-container down
+	docker compose --profile multi-container down
 	@echo "$(GREEN)✓ Containers removed$(NC)"
 
 clean-volumes: ## Remove containers and volumes (WARNING: deletes data)
@@ -168,7 +168,7 @@ clean-volumes: ## Remove containers and volumes (WARNING: deletes data)
 	@read -p "Continue? [y/N] " -n 1 -r; \
 	echo; \
 	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
-		docker-compose --profile multi-container down -v; \
+		docker compose --profile multi-container down -v; \
 		echo "$(GREEN)✓ Containers and volumes removed$(NC)"; \
 	else \
 		echo "Cancelled"; \
@@ -176,7 +176,7 @@ clean-volumes: ## Remove containers and volumes (WARNING: deletes data)
 
 clean-images: ## Remove all built images
 	@echo "$(YELLOW)Removing built images...$(NC)"
-	docker-compose --profile multi-container down --rmi all
+	docker compose --profile multi-container down --rmi all
 	@echo "$(GREEN)✓ Images removed$(NC)"
 
 prune: ## Remove all unused Docker resources
@@ -264,13 +264,13 @@ version: ## Show version information
 	@docker --version
 	@echo ""
 	@echo "Docker Compose version:"
-	@docker-compose --version
+	@docker compose --version
 
 status: ## Show comprehensive system status
 	@echo "$(BLUE)System Status$(NC)"
 	@echo ""
 	@echo "$(YELLOW)Docker containers:$(NC)"
-	@docker-compose ps
+	@docker compose ps
 	@echo ""
 	@echo "$(YELLOW)Docker images:$(NC)"
 	@docker images | grep textbook-parser

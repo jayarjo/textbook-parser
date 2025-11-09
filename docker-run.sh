@@ -56,7 +56,7 @@ elif [ "$MODE" == "gpu" ]; then
 elif [ "$MODE" == "multi" ]; then
     print_info "Running multi-container setup..."
 
-    docker-compose --profile multi-container up "$@"
+    docker compose --profile multi-container up "$@"
 
 elif [ "$MODE" == "bash" ]; then
     print_info "Opening bash shell in container..."
