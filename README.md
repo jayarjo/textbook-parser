@@ -2,6 +2,49 @@
 
 A comprehensive automated pipeline that extracts text and contextual meaning from illustrated book images to generate summaries, quizzes, and educational reports through Google Notebook integration.
 
+---
+
+## 📚 Documentation
+
+**Quick Links:**
+- **[Makefile Guide](MAKEFILE_GUIDE.md)** - Complete command reference (recommended starting point)
+- **[API Documentation](API.md)** - REST API reference for all services
+- **[Docker Guide](DOCKER.md)** - Complete Docker deployment documentation
+- **[API Quick Start](QUICKSTART_API.md)** - Get started with multi-container setup
+- **[Installation Guide](INSTALL.md)** - Detailed installation instructions
+
+---
+
+## 📖 Table of Contents
+
+- [Overview](#-overview)
+- [Architecture](#️-architecture)
+- [Features](#-features)
+- [Prerequisites](#-prerequisites)
+- [Docker Quick Start (Recommended)](#-docker-recommended)
+  - [Using Makefile (Easiest)](#quick-start-with-makefile-easiest)
+  - [Using Scripts](#quick-start-with-scripts)
+  - [Docker Options](#docker-options)
+- [Manual Installation](#-installation-manual)
+- [Usage](#-usage)
+  - [Quick Start](#quick-start)
+  - [Using Configuration Files](#using-configuration-files)
+  - [Run Specific Steps](#run-specific-steps)
+- [Output Structure](#-output-structure)
+- [Configuration](#-configuration)
+- [Using with Google NotebookLM](#-using-with-google-notebooklm)
+- [Pipeline Modules](#-pipeline-modules)
+- [Testing](#-testing)
+- [Troubleshooting](#️-troubleshooting)
+- [Performance](#-performance)
+- [Contributing](#-contributing)
+- [License](#-license)
+- [Acknowledgments](#-acknowledgments)
+- [Support](#-support)
+- [Roadmap](#️-roadmap)
+
+---
+
 ## 🎯 Overview
 
 This system solves the challenge of extracting meaningful content from image-only book pages (e.g., from Google Drive, Calameo, or embedded viewers) with non-standard, illustration-heavy layouts. It combines:
@@ -106,11 +149,35 @@ We provide **three deployment options**:
    ./docker-run.sh gpu --config config/my_book.yaml
    ```
 
-**📖 See [DOCKER.md](DOCKER.md) for complete Docker documentation**
-**📖 See [API.md](API.md) for REST API documentation**
-**📖 See [QUICKSTART_API.md](QUICKSTART_API.md) for API quick start**
+### 📖 Docker Documentation
+
+- **[DOCKER.md](DOCKER.md)** - Complete Docker deployment guide (400+ lines)
+  - Single vs multi-container comparison
+  - GPU support
+  - Production deployment
+  - Troubleshooting
+
+- **[API.md](API.md)** - REST API documentation (600+ lines)
+  - All service endpoints
+  - Request/response schemas
+  - How to replace services with alternatives
+  - Example implementations
+
+- **[QUICKSTART_API.md](QUICKSTART_API.md)** - API quick start guide
+  - Start services
+  - Process books via API
+  - Service replacement examples
+  - Common workflows
+
+- **[MAKEFILE_GUIDE.md](MAKEFILE_GUIDE.md)** - Makefile command reference
+  - All 50+ make commands
+  - Real-world examples
+  - Development workflows
+  - Production deployment
 
 ## 🚀 Installation (Manual)
+
+> **Note:** For detailed installation instructions, see **[INSTALL.md](INSTALL.md)**
 
 ### 1. Clone the Repository
 
@@ -225,7 +292,11 @@ output/
 
 ### Configuration File Structure
 
-See `config/default_config.yaml` for all available options:
+See example configurations:
+- **[config/default_config.yaml](config/default_config.yaml)** - Default settings
+- **[config/example_georgian_book.yaml](config/example_georgian_book.yaml)** - Georgian textbook example
+
+Available options:
 
 ```yaml
 book_url: "https://example.com/book"
@@ -264,13 +335,16 @@ GOOGLE_API_KEY=AIza...
 After running the pipeline:
 
 1. Navigate to `output/notebook_export/`
-2. Upload `notebook_source.md` to [Google NotebookLM](https://notebooklm.google.com)
+2. Upload `notebook_source.md` to [Google NotebookLM](https://noteboomlm.google.com)
 3. Use prompts like:
    - "Create a comprehensive summary of this textbook"
    - "Generate 20 multiple-choice questions"
    - "Generate an audio overview"
 
-See `notebooklm_instructions.md` for detailed instructions.
+The pipeline automatically generates:
+- `notebook_source.md` - Main content for NotebookLM
+- `study_guide.md` - Pre-formatted study guide
+- `notebooklm_instructions.md` - Detailed usage instructions
 
 ## 🔍 Pipeline Modules
 
@@ -305,7 +379,14 @@ See `notebooklm_instructions.md` for detailed instructions.
 
 ## 🧪 Testing
 
-Run individual modules:
+### Example Scripts
+
+See the `examples/` directory:
+- **[examples/simple_usage.py](examples/simple_usage.py)** - Basic pipeline usage
+- **[examples/step_by_step.py](examples/step_by_step.py)** - Run steps individually
+- **[examples/test_modules.py](examples/test_modules.py)** - Test individual modules
+
+### Run Individual Modules
 
 ```python
 from src.ocr_engine import OCREngine
@@ -318,7 +399,14 @@ print(result.text)
 
 ## 🛠️ Troubleshooting
 
-### Tesseract not found
+> **Note:** For comprehensive troubleshooting, see:
+> - **[INSTALL.md](INSTALL.md#troubleshooting)** - Installation issues
+> - **[DOCKER.md](DOCKER.md#troubleshooting)** - Docker-specific issues
+> - **[MAKEFILE_GUIDE.md](MAKEFILE_GUIDE.md#troubleshooting)** - Makefile issues
+
+### Common Issues
+
+#### Tesseract not found
 ```bash
 # Set TESSERACT_CMD environment variable
 export TESSERACT_CMD=/usr/local/bin/tesseract
@@ -377,9 +465,14 @@ MIT License - see LICENSE file
 ## 📧 Support
 
 For issues and questions:
-- Create an issue on GitHub
-- Check existing documentation
-- Review example configurations
+- **Create an issue** on GitHub
+- **Check documentation:**
+  - [INSTALL.md](INSTALL.md) - Installation help
+  - [DOCKER.md](DOCKER.md) - Docker troubleshooting
+  - [API.md](API.md) - API reference
+  - [MAKEFILE_GUIDE.md](MAKEFILE_GUIDE.md) - Makefile commands
+- **Review examples** in `examples/` directory
+- **Check configurations** in `config/` directory
 
 ## 🗺️ Roadmap
 
