@@ -46,9 +46,11 @@ RUN pip install --no-cache-dir \
     --no-build-isolation \
     -r requirements.txt
 
-# Install Playwright and browsers
-RUN playwright install-deps chromium && \
-    playwright install chromium
+# Install Playwright browsers
+# Skip install-deps due to incompatibilities with Debian Trixie
+# Install only the browser binaries
+ENV PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
+RUN playwright install chromium --with-deps || playwright install chromium
 
 # Stage 3: Runtime image
 FROM base AS runtime
