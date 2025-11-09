@@ -12,9 +12,10 @@ Complete API reference for all pipeline services. This document defines the stan
 6. [Image Processor Service](#image-processor-service)
 7. [OCR Engine Service](#ocr-engine-service)
 8. [Illustration Interpreter Service](#illustration-interpreter-service)
-9. [Pipeline Orchestrator Service](#pipeline-orchestrator-service)
-10. [Creating Alternative Implementations](#creating-alternative-implementations)
-11. [Testing Your Implementation](#testing-your-implementation)
+9. [NotebookLM Integration Service](#notebooklm-integration-service)
+10. [Pipeline Orchestrator Service](#pipeline-orchestrator-service)
+11. [Creating Alternative Implementations](#creating-alternative-implementations)
+12. [Testing Your Implementation](#testing-your-implementation)
 
 ---
 
@@ -73,6 +74,7 @@ The textbook parser uses a **microservices architecture** where each pipeline st
 | Image Processor | 8003 | Masks and enhances images |
 | OCR Engine | 8004 | Extracts text |
 | Interpreter | 8005 | Analyzes illustrations |
+| NotebookLM Integration | 8006 | Automates Google NotebookLM |
 
 ---
 
@@ -536,6 +538,128 @@ Your alternative implementation must:
 - **BLIP-2**: Open-source vision-language model
 - **LLaVA**: Open-source alternative
 - **Custom model**: Fine-tuned on educational content
+
+---
+
+## NotebookLM Integration Service
+
+**Base URL:** `http://notebook-integration:8006`
+
+Automates Google NotebookLM using Playwright browser automation to create notebooks, upload sources, and request content generation.
+
+### POST /automate
+
+Run the complete NotebookLM automation workflow.
+
+**Request:**
+```json
+{
+  "source_file_path": "/app/output/notebook_source.md",
+  "notebook_name": "Georgian History Textbook",
+  "generate_audio": true,
+  "generate_quiz": true,
+  "quiz_question_count": 10,
+  "generate_flashcards": true,
+  "generate_study_guide": true,
+  "headless": true,
+  "user_data_dir": "/app/.browser-data"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "notebook_url": "https://notebooklm.google.com/notebook/abc123",
+  "uploaded": true,
+  "audio_generated": true,
+  "quiz_generated": true,
+  "flashcards_generated": true,
+  "study_guide_generated": true,
+  "errors": [],
+  "message": "NotebookLM automation completed successfully"
+}
+```
+
+### POST /create-notebook
+
+Create a new NotebookLM notebook only (without uploading content).
+
+**Request:**
+```json
+{
+  "notebook_name": "My Textbook",
+  "headless": true
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "notebook_url": "https://notebooklm.google.com/notebook/abc123",
+  "message": "Notebook created successfully"
+}
+```
+
+### POST /upload-file
+
+Upload a file to an existing NotebookLM notebook.
+
+**Request:**
+```json
+{
+  "source_file_path": "/app/output/notebook_source.md",
+  "notebook_url": "https://notebooklm.google.com/notebook/abc123",
+  "headless": true
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "File uploaded successfully"
+}
+```
+
+### Implementation Requirements
+
+Your alternative implementation must:
+
+- Navigate to NotebookLM (or alternative platform)
+- Create new notebooks programmatically
+- Upload source documents (MD, TXT, PDF, DOCX)
+- Request audio overview generation
+- Request quiz/flashcard generation
+- Request study guide generation
+- Handle browser automation (login, navigation, file uploads)
+- Support headless and headed modes
+- Maintain session state across requests
+
+### Example Alternative Stack
+
+- **Current**: Playwright + Google NotebookLM
+- **Alternative platforms**:
+  - Notion AI + API
+  - Obsidian + community plugins
+  - Roam Research + API
+  - Custom LLM-based study material generator
+  - Anki flashcard automation
+  - Quizlet automation
+- **Alternative automation**:
+  - Selenium WebDriver
+  - Puppeteer (Node.js)
+  - Official API (when/if available)
+
+### Notes
+
+- **Browser state**: Use `user_data_dir` to persist login sessions
+- **Headless mode**: Set `headless: false` for debugging
+- **Selectors**: May need updates if NotebookLM UI changes
+- **Authentication**: Requires Google account login (manual first time, then persisted)
+- **Rate limits**: Be mindful of NotebookLM usage limits
+- **Shared memory**: Container needs `shm_size: 2gb` for Chromium
 
 ---
 

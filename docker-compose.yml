@@ -118,6 +118,29 @@ services:
     profiles:
       - multi-container
 
+  # NotebookLM Integration service
+  notebook-integration:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.notebook
+    image: textbook-parser-notebook:latest
+    container_name: notebook-integration
+    volumes:
+      - shared-data:/data
+      - ./output:/app/output
+      - ./config:/app/config
+      - ./.env:/app/.env
+      # Mount browser user data for persistent login
+      - notebook-browser-data:/home/parser/.local/share/playwright
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - parser-network
+    profiles:
+      - multi-container
+    # Use shared memory for Chromium
+    shm_size: '2gb'
+
   # Orchestrator service (coordinates other services)
   orchestrator:
     build:
@@ -137,12 +160,14 @@ services:
       - IMAGE_PROCESSOR_URL=http://image-processor:8003
       - OCR_ENGINE_URL=http://ocr-engine:8004
       - INTERPRETER_URL=http://illustration-interpreter:8005
+      - NOTEBOOK_URL=http://notebook-integration:8006
     depends_on:
       - retriever
       - layout-analyzer
       - image-processor
       - ocr-engine
       - illustration-interpreter
+      - notebook-integration
     networks:
       - parser-network
     profiles:
@@ -150,6 +175,8 @@ services:
 
 volumes:
   shared-data:
+    driver: local
+  notebook-browser-data:
     driver: local
 
 networks:

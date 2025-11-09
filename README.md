@@ -55,7 +55,7 @@ This system solves the challenge of extracting meaningful content from image-onl
 - **Intelligent layout analysis** to separate text from illustrations
 - **High-accuracy OCR** optimized for Georgian and multilingual text
 - **AI-powered illustration interpretation** using vision-language models
-- **Google NotebookLM integration** for generating educational content
+- **Automated Google NotebookLM integration** using Playwright for creating notebooks and generating educational content
 
 ## 🏗️ Architecture
 
@@ -75,9 +75,10 @@ Book URL → Image Retriever (Playwright)
 - **Layout-aware processing**: Intelligently separates text from images
 - **Georgian language support**: Optimized for Georgian (ქართული) text extraction
 - **Vision AI integration**: Generates descriptions and educational context for illustrations
-- **NotebookLM ready**: Exports content in formats compatible with Google NotebookLM
+- **NotebookLM automation**: Uses Playwright to automatically create notebooks, upload content, and generate audio/quizzes/flashcards
 - **Modular architecture**: Run individual pipeline steps or the complete workflow
 - **Configurable**: YAML-based configuration with sensible defaults
+- **REST API**: Each service has a standardized API for easy replacement
 
 ## 📋 Prerequisites
 
@@ -334,19 +335,37 @@ GOOGLE_API_KEY=AIza...
 
 ## 🎓 Using with Google NotebookLM
 
-After running the pipeline:
+The pipeline **automatically uploads to NotebookLM** using Playwright browser automation!
 
-1. Navigate to `output/notebook_export/`
-2. Upload `notebook_source.md` to [Google NotebookLM](https://noteboomlm.google.com)
-3. Use prompts like:
-   - "Create a comprehensive summary of this textbook"
-   - "Generate 20 multiple-choice questions"
-   - "Generate an audio overview"
+### Automatic Upload (Recommended)
 
-The pipeline automatically generates:
+The pipeline will:
+1. Create a new NotebookLM notebook
+2. Upload your extracted content
+3. Request generation of:
+   - Audio overview
+   - Quiz questions
+   - Flashcards
+   - Study guide
+
+**First-time setup:**
+- Run in non-headless mode once: `headless: false` in config
+- Log in to your Google account
+- Session will be saved for future runs
+
+### Manual Upload (Alternative)
+
+If you prefer manual upload:
+
+1. Find the generated files in `output/<book-title>/notebook_export/`
+2. Upload `notebook_source.md` to [Google NotebookLM](https://notebooklm.google.com)
+3. Use NotebookLM to generate educational content
+
+**Files exported:**
 - `notebook_source.md` - Main content for NotebookLM
+- `notebook_source.json` - Structured data version
 - `study_guide.md` - Pre-formatted study guide
-- `notebooklm_instructions.md` - Detailed usage instructions
+- `notebooklm_instructions.md` - Step-by-step usage guide
 
 ## 🔍 Pipeline Modules
 

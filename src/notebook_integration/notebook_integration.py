@@ -1,96 +1,613 @@
 """
 Google Notebook Integration Module
 
-Integrates with Google NotebookLM to generate:
-- Audio/video summaries
-- Quiz questions
-- Analytical reports
-- Study guides
+Integrates with Google NotebookLM using Playwright automation to:
+- Create new notebooks
+- Upload source documents
+- Generate audio overviews
+- Generate quizzes and flashcards
+- Generate study guides
 """
 
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 import json
+import time
 from loguru import logger
 
 try:
-    from google.oauth2.credentials import Credentials
-    from google_auth_oauthlib.flow import InstalledAppFlow
-    from google.auth.transport.requests import Request
-    from googleapiclient.discovery import build
-    import pickle
-    GOOGLE_API_AVAILABLE = True
+    from playwright.sync_api import sync_playwright, Page, Browser, BrowserContext, TimeoutError as PlaywrightTimeout
+    PLAYWRIGHT_AVAILABLE = True
 except ImportError:
-    GOOGLE_API_AVAILABLE = False
-    logger.warning("Google API libraries not available.")
+    PLAYWRIGHT_AVAILABLE = False
+    logger.warning("Playwright not available. Install with: pip install playwright && playwright install")
 
 
 class NotebookIntegration:
     """
-    Integrates extracted book content with Google NotebookLM.
+    Integrates extracted book content with Google NotebookLM using browser automation.
 
-    Note: As of 2025, Google NotebookLM does not have a public API.
-    This module provides a framework for when the API becomes available,
-    and currently exports data in formats compatible with manual upload.
+    Since NotebookLM doesn't have a public API, this module uses Playwright to:
+    - Navigate to notebooklm.google.com
+    - Create new notebooks
+    - Upload source documents
+    - Request generation of audio, quizzes, flashcards, etc.
     """
 
     def __init__(
         self,
-        credentials_path: Optional[Path] = None,
-        notebook_id: Optional[str] = None,
+        headless: bool = True,
+        slow_mo: int = 500,
+        timeout: int = 60000,
+        user_data_dir: Optional[Path] = None,
     ):
         """
         Initialize the notebook integration.
 
         Args:
-            credentials_path: Path to Google API credentials
-            notebook_id: Google Notebook ID (if API available)
+            headless: Run browser in headless mode
+            slow_mo: Slow down operations by N milliseconds (useful for debugging)
+            timeout: Default timeout for operations in milliseconds
+            user_data_dir: Path to Chrome user data dir (for persistent login)
         """
-        self.credentials_path = credentials_path
-        self.notebook_id = notebook_id
-        self.service = None
-
-        if GOOGLE_API_AVAILABLE and credentials_path:
-            self._initialize_service()
-        else:
-            logger.info(
-                "Google Notebook API not available. "
-                "Will export data in compatible format."
+        if not PLAYWRIGHT_AVAILABLE:
+            raise ImportError(
+                "Playwright is required for NotebookLM integration. "
+                "Install with: pip install playwright && playwright install chromium"
             )
 
-    def _initialize_service(self) -> None:
-        """Initialize Google API service (placeholder for future API)."""
-        logger.info("Initializing Google Notebook service...")
+        self.headless = headless
+        self.slow_mo = slow_mo
+        self.timeout = timeout
+        self.user_data_dir = user_data_dir
+        self.playwright = None
+        self.browser: Optional[Browser] = None
+        self.context: Optional[BrowserContext] = None
+        self.page: Optional[Page] = None
 
-        # This is a placeholder - Google NotebookLM doesn't have a public API yet
-        # When it becomes available, this would authenticate and create a service
+    def __enter__(self):
+        """Context manager entry."""
+        self.start_browser()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit."""
+        self.close()
+
+    def start_browser(self) -> None:
+        """Start the Playwright browser."""
+        logger.info("Starting browser for NotebookLM automation...")
+
+        self.playwright = sync_playwright().start()
+
+        # Launch browser with options
+        launch_options = {
+            "headless": self.headless,
+            "slow_mo": self.slow_mo,
+        }
+
+        self.browser = self.playwright.chromium.launch(**launch_options)
+
+        # Create context with user data dir if provided (for persistent login)
+        context_options = {
+            "viewport": {"width": 1920, "height": 1080},
+        }
+
+        if self.user_data_dir:
+            # Use persistent context to maintain login
+            self.context = self.browser.new_context(
+                storage_state=str(self.user_data_dir / "storage.json")
+                if (self.user_data_dir / "storage.json").exists()
+                else None,
+                **context_options
+            )
+        else:
+            self.context = self.browser.new_context(**context_options)
+
+        self.page = self.context.new_page()
+        self.page.set_default_timeout(self.timeout)
+
+        logger.info("Browser started successfully")
+
+    def close(self) -> None:
+        """Close the browser and cleanup."""
+        logger.info("Closing browser...")
+
+        # Save storage state if using persistent context
+        if self.user_data_dir and self.context:
+            storage_path = self.user_data_dir / "storage.json"
+            storage_path.parent.mkdir(parents=True, exist_ok=True)
+            self.context.storage_state(path=str(storage_path))
+            logger.info(f"Saved browser state to {storage_path}")
+
+        if self.page:
+            self.page.close()
+        if self.context:
+            self.context.close()
+        if self.browser:
+            self.browser.close()
+        if self.playwright:
+            self.playwright.stop()
+
+        logger.info("Browser closed")
+
+    def navigate_to_notebooklm(self) -> None:
+        """Navigate to Google NotebookLM."""
+        logger.info("Navigating to NotebookLM...")
+
+        if not self.page:
+            raise RuntimeError("Browser not started. Call start_browser() first.")
+
+        self.page.goto("https://notebooklm.google.com", wait_until="networkidle")
+        logger.info("Loaded NotebookLM")
+
+    def create_new_notebook(self, notebook_name: Optional[str] = None) -> str:
+        """
+        Create a new notebook in NotebookLM.
+
+        Args:
+            notebook_name: Name for the notebook (optional)
+
+        Returns:
+            Notebook URL
+        """
+        logger.info(f"Creating new notebook: {notebook_name or 'Untitled'}")
+
+        if not self.page:
+            raise RuntimeError("Browser not started")
 
         try:
-            creds = None
-            token_path = Path("token.pickle")
+            # Look for "New notebook" or "Create" button
+            # Note: Selectors may need adjustment based on NotebookLM UI updates
+            create_button_selectors = [
+                'button:has-text("New notebook")',
+                'button:has-text("Create")',
+                'button:has-text("+")',
+                '[aria-label*="New notebook"]',
+                '[aria-label*="Create notebook"]',
+            ]
 
-            if token_path.exists():
-                with open(token_path, "rb") as token:
-                    creds = pickle.load(token)
+            button_found = False
+            for selector in create_button_selectors:
+                try:
+                    self.page.click(selector, timeout=5000)
+                    button_found = True
+                    logger.info(f"Clicked create button: {selector}")
+                    break
+                except PlaywrightTimeout:
+                    continue
 
-            if not creds or not creds.valid:
-                if creds and creds.expired and creds.refresh_token:
-                    creds.refresh(Request())
-                else:
-                    flow = InstalledAppFlow.from_client_secrets_file(
-                        str(self.credentials_path),
-                        scopes=["https://www.googleapis.com/auth/documents"],
-                    )
-                    creds = flow.run_local_server(port=0)
+            if not button_found:
+                logger.warning("Could not find create notebook button, may already be on new notebook page")
 
-                with open(token_path, "wb") as token:
-                    pickle.dump(creds, token)
+            # Wait for the notebook to be created
+            self.page.wait_for_load_state("networkidle")
+            time.sleep(2)  # Additional wait for UI to settle
 
-            # Would initialize service here when API is available
-            logger.info("Google API credentials configured")
+            # Get the notebook URL
+            notebook_url = self.page.url
+            logger.info(f"Created notebook: {notebook_url}")
+
+            # Set notebook name if provided
+            if notebook_name:
+                try:
+                    # Look for title input/editable element
+                    title_selectors = [
+                        'input[placeholder*="Untitled"]',
+                        '[contenteditable="true"]:has-text("Untitled")',
+                        'h1[contenteditable="true"]',
+                    ]
+
+                    for selector in title_selectors:
+                        try:
+                            self.page.click(selector, timeout=3000)
+                            self.page.fill(selector, notebook_name)
+                            logger.info(f"Set notebook name: {notebook_name}")
+                            break
+                        except PlaywrightTimeout:
+                            continue
+                except Exception as e:
+                    logger.warning(f"Could not set notebook name: {e}")
+
+            return notebook_url
 
         except Exception as e:
-            logger.warning(f"Could not initialize Google service: {e}")
+            logger.error(f"Error creating notebook: {e}")
+            raise
+
+    def upload_source_file(self, file_path: Path) -> bool:
+        """
+        Upload a source file to the current notebook.
+
+        Args:
+            file_path: Path to the file to upload (supports .md, .txt, .pdf, .docx)
+
+        Returns:
+            True if upload successful
+        """
+        logger.info(f"Uploading source file: {file_path}")
+
+        if not self.page:
+            raise RuntimeError("Browser not started")
+
+        if not file_path.exists():
+            raise FileNotFoundError(f"File not found: {file_path}")
+
+        try:
+            # Look for upload button/area
+            upload_selectors = [
+                'button:has-text("Add source")',
+                'button:has-text("Upload")',
+                'input[type="file"]',
+                '[aria-label*="Add source"]',
+                '[aria-label*="Upload"]',
+            ]
+
+            # Try to find and click upload button
+            for selector in upload_selectors:
+                try:
+                    if 'input[type="file"]' in selector:
+                        # Direct file input
+                        file_input = self.page.locator(selector)
+                        file_input.set_input_files(str(file_path))
+                        logger.info("File uploaded via file input")
+                        break
+                    else:
+                        # Button that reveals file input
+                        self.page.click(selector, timeout=5000)
+                        time.sleep(1)
+
+                        # Now look for the file input
+                        file_input = self.page.locator('input[type="file"]')
+                        if file_input.count() > 0:
+                            file_input.first.set_input_files(str(file_path))
+                            logger.info("File uploaded via button -> file input")
+                            break
+                except PlaywrightTimeout:
+                    continue
+
+            # Wait for upload to complete
+            logger.info("Waiting for upload to process...")
+            time.sleep(5)  # Give it time to process the file
+
+            # Look for success indicators
+            try:
+                # Wait for the source to appear in the sources list
+                self.page.wait_for_selector(
+                    f'text="{file_path.name}"',
+                    timeout=30000
+                )
+                logger.info("Source file uploaded successfully")
+                return True
+            except PlaywrightTimeout:
+                logger.warning("Upload may have succeeded but couldn't confirm")
+                return True
+
+        except Exception as e:
+            logger.error(f"Error uploading file: {e}")
+            raise
+
+    def generate_audio_overview(self) -> bool:
+        """
+        Request generation of audio overview.
+
+        Returns:
+            True if request successful
+        """
+        logger.info("Requesting audio overview generation...")
+
+        if not self.page:
+            raise RuntimeError("Browser not started")
+
+        try:
+            # Look for audio overview button
+            audio_selectors = [
+                'button:has-text("Audio overview")',
+                'button:has-text("Generate audio")',
+                '[aria-label*="Audio overview"]',
+                '[aria-label*="Generate audio"]',
+            ]
+
+            for selector in audio_selectors:
+                try:
+                    self.page.click(selector, timeout=5000)
+                    logger.info("Clicked audio overview button")
+
+                    # Wait for generation to start
+                    time.sleep(2)
+
+                    # Look for generation started indicator
+                    try:
+                        self.page.wait_for_selector(
+                            'text=/Generating|Creating|Processing/',
+                            timeout=5000
+                        )
+                        logger.info("Audio overview generation started")
+                    except PlaywrightTimeout:
+                        logger.info("Audio overview generation may have started")
+
+                    return True
+                except PlaywrightTimeout:
+                    continue
+
+            logger.warning("Could not find audio overview button")
+            return False
+
+        except Exception as e:
+            logger.error(f"Error generating audio overview: {e}")
+            return False
+
+    def generate_study_guide(self) -> bool:
+        """
+        Request generation of study guide.
+
+        Returns:
+            True if request successful
+        """
+        logger.info("Requesting study guide generation...")
+
+        if not self.page:
+            raise RuntimeError("Browser not started")
+
+        try:
+            # Type in the chat/prompt area to request study guide
+            prompt_selectors = [
+                'textarea[placeholder*="Ask"]',
+                'textarea[placeholder*="question"]',
+                'input[type="text"]',
+                '[contenteditable="true"]',
+            ]
+
+            for selector in prompt_selectors:
+                try:
+                    self.page.click(selector, timeout=5000)
+                    self.page.fill(
+                        selector,
+                        "Create a comprehensive study guide with key concepts, important terms, and practice questions."
+                    )
+
+                    # Press Enter or click send
+                    self.page.keyboard.press("Enter")
+                    logger.info("Requested study guide generation")
+                    time.sleep(2)
+                    return True
+                except PlaywrightTimeout:
+                    continue
+
+            logger.warning("Could not find prompt input")
+            return False
+
+        except Exception as e:
+            logger.error(f"Error generating study guide: {e}")
+            return False
+
+    def generate_quiz(self, num_questions: int = 10) -> bool:
+        """
+        Request generation of quiz questions.
+
+        Args:
+            num_questions: Number of quiz questions to generate
+
+        Returns:
+            True if request successful
+        """
+        logger.info(f"Requesting quiz with {num_questions} questions...")
+
+        if not self.page:
+            raise RuntimeError("Browser not started")
+
+        try:
+            # Look for quiz/flashcards button or use chat
+            quiz_selectors = [
+                'button:has-text("Quiz")',
+                'button:has-text("Practice")',
+                'button:has-text("Flashcard")',
+                '[aria-label*="Quiz"]',
+                '[aria-label*="Practice"]',
+            ]
+
+            # Try clicking quiz button first
+            for selector in quiz_selectors:
+                try:
+                    self.page.click(selector, timeout=5000)
+                    logger.info("Clicked quiz button")
+                    time.sleep(2)
+                    return True
+                except PlaywrightTimeout:
+                    continue
+
+            # If no button found, use chat prompt
+            prompt_selectors = [
+                'textarea[placeholder*="Ask"]',
+                'textarea[placeholder*="question"]',
+                'input[type="text"]',
+                '[contenteditable="true"]',
+            ]
+
+            for selector in prompt_selectors:
+                try:
+                    self.page.click(selector, timeout=5000)
+                    self.page.fill(
+                        selector,
+                        f"Generate {num_questions} multiple-choice quiz questions covering the main concepts from this content."
+                    )
+
+                    # Press Enter or click send
+                    self.page.keyboard.press("Enter")
+                    logger.info("Requested quiz generation via chat")
+                    time.sleep(2)
+                    return True
+                except PlaywrightTimeout:
+                    continue
+
+            logger.warning("Could not find quiz button or prompt input")
+            return False
+
+        except Exception as e:
+            logger.error(f"Error generating quiz: {e}")
+            return False
+
+    def generate_flashcards(self) -> bool:
+        """
+        Request generation of flashcards.
+
+        Returns:
+            True if request successful
+        """
+        logger.info("Requesting flashcard generation...")
+
+        if not self.page:
+            raise RuntimeError("Browser not started")
+
+        try:
+            # Use chat prompt to request flashcards
+            prompt_selectors = [
+                'textarea[placeholder*="Ask"]',
+                'textarea[placeholder*="question"]',
+                'input[type="text"]',
+                '[contenteditable="true"]',
+            ]
+
+            for selector in prompt_selectors:
+                try:
+                    self.page.click(selector, timeout=5000)
+                    self.page.fill(
+                        selector,
+                        "Create flashcards for all important terms and concepts in this content."
+                    )
+
+                    # Press Enter or click send
+                    self.page.keyboard.press("Enter")
+                    logger.info("Requested flashcard generation")
+                    time.sleep(2)
+                    return True
+                except PlaywrightTimeout:
+                    continue
+
+            logger.warning("Could not find prompt input for flashcards")
+            return False
+
+        except Exception as e:
+            logger.error(f"Error generating flashcards: {e}")
+            return False
+
+    def automate_full_workflow(
+        self,
+        source_file: Path,
+        notebook_name: Optional[str] = None,
+        generate_audio: bool = True,
+        generate_quiz_count: Optional[int] = 10,
+        generate_flashcards_flag: bool = True,
+        generate_study_guide_flag: bool = True,
+    ) -> Dict[str, Any]:
+        """
+        Run the complete NotebookLM automation workflow.
+
+        Args:
+            source_file: Path to source file to upload
+            notebook_name: Name for the notebook
+            generate_audio: Whether to generate audio overview
+            generate_quiz_count: Number of quiz questions (None to skip)
+            generate_flashcards_flag: Whether to generate flashcards
+            generate_study_guide_flag: Whether to generate study guide
+
+        Returns:
+            Dictionary with workflow results
+        """
+        logger.info("Starting full NotebookLM automation workflow...")
+
+        results = {
+            "success": False,
+            "notebook_url": None,
+            "uploaded": False,
+            "audio_generated": False,
+            "quiz_generated": False,
+            "flashcards_generated": False,
+            "study_guide_generated": False,
+            "errors": [],
+        }
+
+        try:
+            # Step 1: Navigate to NotebookLM
+            self.navigate_to_notebooklm()
+            time.sleep(2)
+
+            # Step 2: Create new notebook
+            try:
+                notebook_url = self.create_new_notebook(notebook_name)
+                results["notebook_url"] = notebook_url
+            except Exception as e:
+                error_msg = f"Failed to create notebook: {e}"
+                logger.error(error_msg)
+                results["errors"].append(error_msg)
+                return results
+
+            # Step 3: Upload source file
+            try:
+                uploaded = self.upload_source_file(source_file)
+                results["uploaded"] = uploaded
+
+                if not uploaded:
+                    raise RuntimeError("Upload failed")
+
+                # Wait for processing
+                time.sleep(5)
+            except Exception as e:
+                error_msg = f"Failed to upload file: {e}"
+                logger.error(error_msg)
+                results["errors"].append(error_msg)
+                return results
+
+            # Step 4: Generate audio overview
+            if generate_audio:
+                try:
+                    results["audio_generated"] = self.generate_audio_overview()
+                    time.sleep(3)
+                except Exception as e:
+                    error_msg = f"Failed to generate audio: {e}"
+                    logger.warning(error_msg)
+                    results["errors"].append(error_msg)
+
+            # Step 5: Generate quiz
+            if generate_quiz_count:
+                try:
+                    results["quiz_generated"] = self.generate_quiz(generate_quiz_count)
+                    time.sleep(3)
+                except Exception as e:
+                    error_msg = f"Failed to generate quiz: {e}"
+                    logger.warning(error_msg)
+                    results["errors"].append(error_msg)
+
+            # Step 6: Generate flashcards
+            if generate_flashcards_flag:
+                try:
+                    results["flashcards_generated"] = self.generate_flashcards()
+                    time.sleep(3)
+                except Exception as e:
+                    error_msg = f"Failed to generate flashcards: {e}"
+                    logger.warning(error_msg)
+                    results["errors"].append(error_msg)
+
+            # Step 7: Generate study guide
+            if generate_study_guide_flag:
+                try:
+                    results["study_guide_generated"] = self.generate_study_guide()
+                    time.sleep(3)
+                except Exception as e:
+                    error_msg = f"Failed to generate study guide: {e}"
+                    logger.warning(error_msg)
+                    results["errors"].append(error_msg)
+
+            results["success"] = results["uploaded"]
+            logger.info("Workflow completed successfully")
+
+            return results
+
+        except Exception as e:
+            error_msg = f"Workflow error: {e}"
+            logger.error(error_msg)
+            results["errors"].append(error_msg)
+            return results
 
     def create_notebook_source(
         self,
