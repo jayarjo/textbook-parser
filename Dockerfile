@@ -37,8 +37,12 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Install dependencies with optimizations
+# First install torch separately (required by detectron2 during build)
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir torch==2.1.2 torchvision==0.16.2
+
+# Then install the rest of the requirements
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Install Playwright and browsers
 RUN playwright install-deps chromium && \
