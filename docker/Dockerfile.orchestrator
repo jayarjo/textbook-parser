@@ -7,19 +7,29 @@ WORKDIR /app
 
 # Install orchestrator dependencies
 RUN pip install --no-cache-dir \
-    requests==2.31.0 \
+    fastapi==0.109.0 \
+    uvicorn[standard]==0.27.0 \
+    httpx==0.26.0 \
     pydantic==2.5.3 \
     pyyaml==6.0.1 \
     loguru==0.7.2 \
     python-dotenv==1.0.0
 
-# Copy all source files
-COPY src/ src/
+# Copy source files
+COPY src/__init__.py src/
+COPY src/api/__init__.py src/api/
+COPY src/api/schemas.py src/api/
+COPY src/api/orchestrator_service.py src/api/
 COPY config/ config/
-COPY main.py .
+
+# Create data directories
+RUN mkdir -p /data/images /data/cleaned /data/text /data/illustrations /data/metadata
+
+# Expose port for API
+EXPOSE 8000
 
 # Run as non-root user
-RUN useradd -m -u 1000 parser && chown -R parser:parser /app
+RUN useradd -m -u 1000 parser && chown -R parser:parser /app /data
 USER parser
 
-CMD ["python", "main.py"]
+CMD ["python", "-m", "uvicorn", "src.api.orchestrator_service:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -25,15 +25,26 @@ RUN pip install --no-cache-dir \
     loguru==0.7.2 \
     pydantic==2.5.3
 
-# Copy only necessary source files
+# Install FastAPI and uvicorn
+RUN pip install --no-cache-dir \
+    fastapi==0.109.0 \
+    uvicorn[standard]==0.27.0
+
+# Copy source files
 COPY src/__init__.py src/
 COPY src/ocr_engine/ src/ocr_engine/
+COPY src/api/__init__.py src/api/
+COPY src/api/schemas.py src/api/
+COPY src/api/ocr_service.py src/api/
+
+# Create data directories
+RUN mkdir -p /data/cleaned /data/text
 
 # Expose port for API
 EXPOSE 8004
 
 # Run as non-root user
-RUN useradd -m -u 1000 parser && chown -R parser:parser /app
+RUN useradd -m -u 1000 parser && chown -R parser:parser /app /data
 USER parser
 
-CMD ["python", "-m", "src.ocr_engine.ocr_engine"]
+CMD ["python", "-m", "uvicorn", "src.api.ocr_service:app", "--host", "0.0.0.0", "--port", "8004"]

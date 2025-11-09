@@ -15,15 +15,26 @@ RUN pip install --no-cache-dir \
     pydantic==2.5.3 \
     python-dotenv==1.0.0
 
-# Copy only necessary source files
+# Install FastAPI and uvicorn
+RUN pip install --no-cache-dir \
+    fastapi==0.109.0 \
+    uvicorn[standard]==0.27.0
+
+# Copy source files
 COPY src/__init__.py src/
 COPY src/illustration_interpreter/ src/illustration_interpreter/
+COPY src/api/__init__.py src/api/
+COPY src/api/schemas.py src/api/
+COPY src/api/interpreter_service.py src/api/
+
+# Create data directory
+RUN mkdir -p /data/illustrations
 
 # Expose port for API
 EXPOSE 8005
 
 # Run as non-root user
-RUN useradd -m -u 1000 parser && chown -R parser:parser /app
+RUN useradd -m -u 1000 parser && chown -R parser:parser /app /data
 USER parser
 
-CMD ["python", "-m", "src.illustration_interpreter.illustration_interpreter"]
+CMD ["python", "-m", "uvicorn", "src.api.interpreter_service:app", "--host", "0.0.0.0", "--port", "8005"]
