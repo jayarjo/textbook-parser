@@ -52,7 +52,25 @@ Book URL → Image Retriever (Playwright)
 
 **Prefer Docker?** Skip the manual installation and use our Docker containers!
 
-### Quick Start with Docker
+### Quick Start with Makefile (Easiest!)
+
+```bash
+# Build and start everything
+make quick-start
+
+# Process a book
+make process URL="https://example.com/book" TITLE="My Book"
+
+# View logs
+make logs
+
+# Stop services
+make down
+```
+
+**📖 See [MAKEFILE_GUIDE.md](MAKEFILE_GUIDE.md) for all Makefile commands**
+
+### Quick Start with Scripts
 
 ```bash
 # Build the container
@@ -71,23 +89,26 @@ We provide **three deployment options**:
 
 1. **Single Container** (recommended) - All-in-one, easy to use
    ```bash
-   ./docker-build.sh single
+   make build-single
    ./docker-run.sh single --url "https://example.com/book"
    ```
 
 2. **Multi-Container** - Production setup with service isolation
    ```bash
-   ./docker-build.sh multi
-   ./docker-run.sh multi
+   make build-multi
+   make up-d
+   make health
    ```
 
 3. **GPU-Enabled** - Faster processing with GPU acceleration
    ```bash
-   ./docker-build.sh gpu
+   make build-gpu
    ./docker-run.sh gpu --config config/my_book.yaml
    ```
 
 **📖 See [DOCKER.md](DOCKER.md) for complete Docker documentation**
+**📖 See [API.md](API.md) for REST API documentation**
+**📖 See [QUICKSTART_API.md](QUICKSTART_API.md) for API quick start**
 
 ## 🚀 Installation (Manual)
 
