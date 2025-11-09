@@ -6,6 +6,8 @@ A comprehensive automated pipeline that extracts text and contextual meaning fro
 
 ## 📚 Documentation
 
+> **🗂️ [Complete Documentation Index](DOCUMENTATION.md)** - Master index of all documentation with navigation guide
+
 **Quick Links:**
 - **[Makefile Guide](MAKEFILE_GUIDE.md)** - Complete command reference (recommended starting point)
 - **[API Documentation](API.md)** - REST API reference for all services
