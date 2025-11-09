@@ -9,7 +9,8 @@ torch==2.1.2
 torchvision==0.16.2
 layoutparser[layoutmodels]==0.3.4
 detectron2 @ git+https://github.com/facebookresearch/detectron2.git
-opencv-python==4.9.0.80
+# opencv-python version constrained by paddleocr requirement (<=4.6.0.66)
+opencv-python==4.6.0.66
 pdf2image==1.16.3
 
 # OCR Engines
