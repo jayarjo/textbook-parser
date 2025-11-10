@@ -29,6 +29,8 @@ services:
       dockerfile: docker/Dockerfile.retriever
     image: textbook-parser-retriever:latest
     container_name: retriever
+    ports:
+      - "8001:8001"
     volumes:
       - shared-data:/data
       - ./config:/app/config
@@ -46,6 +48,8 @@ services:
       dockerfile: docker/Dockerfile.layout-analyzer
     image: textbook-parser-layout:latest
     container_name: layout-analyzer
+    ports:
+      - "8002:8002"
     volumes:
       - shared-data:/data
       - ./config:/app/config
@@ -71,6 +75,8 @@ services:
       dockerfile: docker/Dockerfile.image-processor
     image: textbook-parser-processor:latest
     container_name: image-processor
+    ports:
+      - "8003:8003"
     volumes:
       - shared-data:/data
       - ./config:/app/config
@@ -88,6 +94,8 @@ services:
       dockerfile: docker/Dockerfile.ocr
     image: textbook-parser-ocr:latest
     container_name: ocr-engine
+    ports:
+      - "8004:8004"
     volumes:
       - shared-data:/data
       - ./config:/app/config
@@ -105,10 +113,13 @@ services:
       dockerfile: docker/Dockerfile.interpreter
     image: textbook-parser-interpreter:latest
     container_name: illustration-interpreter
+    ports:
+      - "8005:8005"
     volumes:
       - shared-data:/data
       - ./config:/app/config
-      - ./.env:/app/.env
+    env_file:
+      - .env
     environment:
       - PYTHONUNBUFFERED=1
     networks:
@@ -123,13 +134,16 @@ services:
       dockerfile: docker/Dockerfile.notebook
     image: textbook-parser-notebook:latest
     container_name: notebook-integration
+    ports:
+      - "8006:8006"
     volumes:
       - shared-data:/data
       - ./output:/app/output
       - ./config:/app/config
-      - ./.env:/app/.env
       # Mount browser user data for persistent login
       - notebook-browser-data:/home/parser/.local/share/playwright
+    env_file:
+      - .env
     environment:
       - PYTHONUNBUFFERED=1
     networks:
@@ -146,11 +160,14 @@ services:
       dockerfile: docker/Dockerfile.orchestrator
     image: textbook-parser-orchestrator:latest
     container_name: orchestrator
+    ports:
+      - "8000:8000"
     volumes:
       - shared-data:/data
       - ./output:/app/output
       - ./config:/app/config
-      - ./.env:/app/.env
+    env_file:
+      - .env
     environment:
       - PYTHONUNBUFFERED=1
       - RETRIEVER_URL=http://retriever:8001
