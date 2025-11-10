@@ -31,8 +31,17 @@ COPY requirements-retriever.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements-retriever.txt
 
-# Install Playwright browsers
-RUN playwright install chromium
+# Create user first
+RUN useradd -m -u 1000 parser
+
+# Set Playwright browsers path and install as parser user
+ENV PLAYWRIGHT_BROWSERS_PATH=/home/parser/.cache/ms-playwright
+RUN mkdir -p /home/parser/.cache && chown -R parser:parser /home/parser/.cache
+USER parser
+RUN playwright install chromium --with-deps || playwright install chromium
+
+# Switch back to root to copy files
+USER root
 
 # Copy source files
 COPY src/__init__.py src/
@@ -47,8 +56,8 @@ RUN mkdir -p /data/images
 # Expose port for API
 EXPOSE 8001
 
-# Run as non-root user
-RUN useradd -m -u 1000 parser && chown -R parser:parser /app /data
+# Set ownership and switch to parser user
+RUN chown -R parser:parser /app /data
 USER parser
 
 CMD ["python", "-m", "uvicorn", "src.api.retriever_service:app", "--host", "0.0.0.0", "--port", "8001"]

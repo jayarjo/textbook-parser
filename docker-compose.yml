@@ -36,6 +36,7 @@ services:
       - ./config:/app/config
     environment:
       - PYTHONUNBUFFERED=1
+      - PLAYWRIGHT_BROWSERS_PATH=/home/parser/.cache/ms-playwright
     networks:
       - parser-network
     profiles:
