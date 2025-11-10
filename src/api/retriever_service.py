@@ -77,7 +77,8 @@ async def retrieve_images(request: RetrievalRequest):
 
         retriever = get_retriever(request.output_dir)
 
-        image_paths = retriever.retrieve_images_sync(
+        # Use async method directly since we're in an async endpoint
+        image_paths = await retriever.retrieve_images(
             url=request.url,
             strategy=request.strategy,
             max_pages=request.max_pages,
