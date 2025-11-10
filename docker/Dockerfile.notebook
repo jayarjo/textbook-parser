@@ -31,19 +31,12 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements
-COPY requirements.txt .
+# Copy minimal requirements for notebook service
+COPY requirements-notebook.txt .
 
-# Install Python dependencies
-# First install torch separately (required by detectron2 during build)
+# Install Python dependencies (minimal set for Playwright + FastAPI only)
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir torch==2.1.2 torchvision==0.16.2
-
-# Install build tools needed by detectron2
-RUN pip install --no-cache-dir ninja wheel
-
-# Then install the rest of the requirements with --no-build-isolation
-RUN pip install --no-cache-dir --no-build-isolation -r requirements.txt
+    pip install --no-cache-dir -r requirements-notebook.txt
 
 # Install Playwright and browsers
 RUN pip install playwright && \
