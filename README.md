@@ -107,6 +107,10 @@ make quick-start
 # Process a book
 make process URL="https://example.com/book" TITLE="My Book"
 
+# Process with pagination (like printer dialog)
+make process URL="https://example.com/book" TITLE="My Book" MAX_PAGES=10
+make process URL="https://example.com/book" TITLE="My Book" PAGE_START=5 PAGE_END=15
+
 # View logs
 make logs
 

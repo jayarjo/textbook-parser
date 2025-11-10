@@ -68,16 +68,20 @@ make down
 # Make sure services are running
 make up-d
 
-# Process a book
+# Process entire book
 make process URL="https://example.com/book" TITLE="My Book"
+
+# Process with pagination (like printer dialog)
+make process URL="https://example.com/book" TITLE="My Book" MAX_PAGES=10        # First 10 pages
+make process URL="https://example.com/book" TITLE="My Book" PAGE_START=5 PAGE_END=15  # Pages 5-15
 
 # Or with existing images
 make process-skip-retrieval TITLE="My Book"
 
-# View the results
-make shell-orchestrator
-# Inside container:
-ls /data/text/
+# View the results in ./data directory
+ls data/images/      # Retrieved images (SVG, PNG, etc.)
+ls data/text/        # Extracted text
+ls output/           # Final output files
 cat /data/text/book_full.txt
 ```
 

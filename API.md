@@ -680,11 +680,19 @@ Run the complete pipeline.
   "book_title": "Georgian History Textbook",
   "skip_retrieval": false,
   "skip_interpretation": false,
+  "max_pages": 10,          // Optional: limit to first N pages
+  "page_start": 5,          // Optional: start from page N
+  "page_end": 15,           // Optional: end at page N
   "config_overrides": {
     "ocr_languages": ["kat", "eng"]
   }
 }
 ```
+
+**Pagination Options (like printer dialog):**
+- `max_pages`: Process only first N pages (e.g., `10` for pages 1-10)
+- `page_start` + `page_end`: Process specific page range (e.g., pages 5-15)
+- Omit all: Process entire book
 
 **Response:**
 ```json
