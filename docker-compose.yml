@@ -107,6 +107,25 @@ services:
     profiles:
       - multi-container
 
+  # SVG Text Processor service
+  svg-processor:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.svg
+    image: textbook-parser-svg:latest
+    container_name: svg-processor
+    ports:
+      - "8007:8007"
+    volumes:
+      - shared-data:/data
+      - ./config:/app/config
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - parser-network
+    profiles:
+      - multi-container
+
   # Illustration Interpreter service
   illustration-interpreter:
     build:
@@ -175,6 +194,7 @@ services:
       - LAYOUT_ANALYZER_URL=http://layout-analyzer:8002
       - IMAGE_PROCESSOR_URL=http://image-processor:8003
       - OCR_ENGINE_URL=http://ocr-engine:8004
+      - SVG_PROCESSOR_URL=http://svg-processor:8007
       - INTERPRETER_URL=http://illustration-interpreter:8005
       - NOTEBOOK_URL=http://notebook-integration:8006
     depends_on:
@@ -182,6 +202,7 @@ services:
       - layout-analyzer
       - image-processor
       - ocr-engine
+      - svg-processor
       - illustration-interpreter
       - notebook-integration
     networks:

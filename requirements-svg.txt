@@ -1,0 +1,12 @@
+# Minimal requirements for SVG Text Processor Service
+# Extracts text directly from SVG/SVGZ files
+
+# No heavy dependencies needed - just standard library + FastAPI
+
+# API Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+
+# Utilities
+pydantic==2.5.3
+loguru==0.7.2

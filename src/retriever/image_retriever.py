@@ -300,12 +300,23 @@ class ImageRetriever:
         return None
 
     def _save_image(self, image_data: bytes, page_num: int) -> Optional[Path]:
-        """Save image data to disk."""
+        """Save image data to disk with appropriate extension."""
         try:
-            output_path = self.output_dir / f"page_{page_num:03d}.png"
+            # Detect file type from content
+            extension = ".png"  # default
+
+            # Check for SVG/SVGZ
+            if image_data.startswith(b'\x1f\x8b'):  # gzip header
+                extension = ".svgz"
+            elif image_data.startswith(b'<?xml') or image_data.startswith(b'<svg'):
+                extension = ".svg"
+            elif image_data.startswith(b'\xff\xd8\xff'):  # JPEG
+                extension = ".jpg"
+
+            output_path = self.output_dir / f"page_{page_num:03d}{extension}"
             with open(output_path, "wb") as f:
                 f.write(image_data)
-            logger.debug(f"Saved image: {output_path}")
+            logger.info(f"Saved {extension} image: {output_path}")
             return output_path
         except Exception as e:
             logger.error(f"Failed to save image: {e}")

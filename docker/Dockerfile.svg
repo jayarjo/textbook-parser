@@ -1,0 +1,32 @@
+# Dockerfile for SVG Text Processor Service
+# Lightweight container for extracting text from SVG/SVGZ files
+
+FROM python:3.9-slim
+
+WORKDIR /app
+
+# Copy minimal requirements for SVG processor service
+COPY requirements-svg.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements-svg.txt
+
+# Copy source files
+COPY src/__init__.py src/
+COPY src/svg_processor/ src/svg_processor/
+COPY src/api/__init__.py src/api/
+COPY src/api/schemas.py src/api/
+COPY src/api/svg_service.py src/api/
+
+# Create data directories
+RUN mkdir -p /data/images /data/text
+
+# Expose port for API
+EXPOSE 8007
+
+# Run as non-root user
+RUN useradd -m -u 1000 parser && chown -R parser:parser /app /data
+USER parser
+
+CMD ["python", "-m", "uvicorn", "src.api.svg_service:app", "--host", "0.0.0.0", "--port", "8007"]
