@@ -52,7 +52,7 @@ class ImageRetriever:
         self.max_retries = max_retries
         self.wait_for_images = wait_for_images
         self.user_agent = user_agent
-        self.intercepted_images: List[bytes] = []
+        self.intercepted_images: List[tuple[str, bytes]] = []  # Store (url, data) tuples
         self.page_count = 0
         self.is_calameo = False  # Track if source is Calameo (SVG-based)
 
@@ -131,12 +131,33 @@ class ImageRetriever:
                     # Get the image data
                     image_data = await response.body()
                     if image_data:
-                        self.intercepted_images.append(image_data)
+                        self.intercepted_images.append((url, image_data))
                         logger.info(f"Intercepted image: {url} ({len(image_data)} bytes, {content_type})")
             except Exception as e:
                 logger.warning(f"Failed to intercept response from {response.url}: {e}")
 
         page.on("response", handle_response)
+
+    def _extract_page_number(self, url: str) -> Optional[int]:
+        """Extract page number from URL."""
+        # Try common patterns for page numbers in URLs
+        patterns = [
+            r'/p(\d+)[_\-\.]',  # /p123-, /p123., /p123_
+            r'[_\-/]p(\d+)',     # _p123, -p123, /p123
+            r'page[_\-]?(\d+)',  # page123, page_123, page-123
+            r'/(\d+)\.',         # /123.svg
+            r'_(\d+)\.',         # _123.svg
+        ]
+
+        for pattern in patterns:
+            match = re.search(pattern, url, re.IGNORECASE)
+            if match:
+                try:
+                    return int(match.group(1))
+                except (ValueError, IndexError):
+                    continue
+
+        return None
 
     async def _retrieve_via_interception(
         self, page: Page, max_pages: Optional[int] = None
@@ -172,12 +193,31 @@ class ImageRetriever:
             # Save any new intercepted images
             if self.intercepted_images:
                 logger.info(f"Found {len(self.intercepted_images)} intercepted images")
-                for img_data in self.intercepted_images:
-                    path = self._save_image(img_data, page_num)
+
+                # Extract page numbers and sort by them
+                images_with_pages = []
+                for url, img_data in self.intercepted_images:
+                    detected_page = self._extract_page_number(url)
+                    if detected_page is not None:
+                        images_with_pages.append((detected_page, url, img_data))
+                        logger.info(f"Detected page {detected_page} from URL: {url}")
+                    else:
+                        # Fallback to sequential if we can't detect page number
+                        images_with_pages.append((page_num, url, img_data))
+                        logger.warning(f"Could not detect page number from URL: {url}, using sequential {page_num}")
+                        page_num += 1
+
+                # Sort by detected page number
+                images_with_pages.sort(key=lambda x: x[0])
+
+                # Save images in correct order
+                for detected_page, url, img_data in images_with_pages:
+                    path = self._save_image(img_data, detected_page)
                     if path:
                         saved_paths.append(path)
-                        logger.info(f"Saved page {page_num}: {path}")
-                        page_num += 1
+                        logger.info(f"Saved page {detected_page}: {path}")
+                        page_num = max(page_num, detected_page + 1)
+
                 self.intercepted_images = []
                 consecutive_empty_pages = 0
             else:
