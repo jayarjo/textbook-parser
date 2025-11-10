@@ -1,8 +1,6 @@
 # Docker Compose for Textbook Parser Pipeline
 # Multi-container setup for production use
 
-version: '3.8'
-
 services:
   # All-in-one service (default)
   textbook-parser:
