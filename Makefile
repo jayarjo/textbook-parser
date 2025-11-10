@@ -235,11 +235,16 @@ quick-start: build-multi up-d health ## Build, start, and verify all services
 	@echo "  Use 'make logs' to view logs"
 	@echo "  Use 'make health' to check status"
 
-process: ## Process a book (usage: make process URL="https://..." TITLE="Book Title")
-	@echo "$(YELLOW)Processing book: $(TITLE)$(NC)"
-	@curl -X POST http://localhost:8000/pipeline \
+process: ## Process a book (usage: make process URL="https://..." TITLE="Book Title" [MAX_PAGES=10])
+	@echo "$(YELLOW)Processing book: $(TITLE) $(if $(MAX_PAGES),(max $(MAX_PAGES) pages))$(NC)"
+	@JSON='{"book_url": "$(URL)", "book_title": "$(TITLE)"'; \
+	if [ -n "$(MAX_PAGES)" ]; then JSON="$$JSON, \"max_pages\": $(MAX_PAGES)"; fi; \
+	if [ -n "$(PAGE_START)" ]; then JSON="$$JSON, \"page_start\": $(PAGE_START)"; fi; \
+	if [ -n "$(PAGE_END)" ]; then JSON="$$JSON, \"page_end\": $(PAGE_END)"; fi; \
+	JSON="$$JSON}"; \
+	curl -X POST http://localhost:8000/pipeline \
 		-H "Content-Type: application/json" \
-		-d '{"book_url": "$(URL)", "book_title": "$(TITLE)"}' \
+		-d "$$JSON" \
 		| python3 -m json.tool
 
 process-skip-retrieval: ## Process with existing images

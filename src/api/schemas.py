@@ -216,6 +216,10 @@ class PipelineRequest(BaseModel):
     skip_retrieval: bool = False
     skip_interpretation: bool = False
     config_overrides: Optional[Dict[str, Any]] = None
+    # Pagination options (like printer dialog)
+    max_pages: Optional[int] = None  # Limit total pages to process
+    page_start: Optional[int] = None  # Start from this page number
+    page_end: Optional[int] = None  # End at this page number
 
 
 class PipelineStepRequest(BaseModel):
