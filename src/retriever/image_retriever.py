@@ -271,9 +271,6 @@ class ImageRetriever:
                     logger.info(f"Stopping: {consecutive_empty_pages} consecutive pages with no SVG files")
                     break
 
-            # Move to next page
-            current_page += 1
-
             # Try to navigate to next page
             navigated = False
             for selector in next_button_selectors:
@@ -301,8 +298,11 @@ class ImageRetriever:
                     break
 
             if not navigated:
-                logger.info(f"Unable to navigate to next page, stopping after {pages_viewed} pages")
+                logger.info(f"Unable to navigate to next page, stopping after viewing {current_page} pages")
                 break
+
+            # Increment page counter AFTER navigation (we're now on the next page)
+            current_page += 1
 
         return saved_paths
 
