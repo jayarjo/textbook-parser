@@ -1,7 +1,7 @@
 # Makefile for Textbook Parser Pipeline
 # Simplifies Docker operations and common tasks
 
-.PHONY: help build-single build-multi build-gpu build-all up down logs clean test health
+.PHONY: help build-single build-multi build-gpu build-all rebuild rebuild-multi up down logs clean test health
 
 # Default target - show help
 .DEFAULT_GOAL := help
@@ -46,6 +46,11 @@ rebuild: ## Rebuild all services from scratch (no cache)
 	@echo "$(YELLOW)Rebuilding all services (no cache)...$(NC)"
 	docker compose build --no-cache
 	@echo "$(GREEN)✓ Services rebuilt$(NC)"
+
+rebuild-multi: ## Rebuild multi-container services from scratch (no cache)
+	@echo "$(YELLOW)Rebuilding multi-container services (no cache)...$(NC)"
+	docker compose --profile multi-container build --no-cache
+	@echo "$(GREEN)✓ Multi-container services rebuilt$(NC)"
 
 ##@ Docker Run
 
