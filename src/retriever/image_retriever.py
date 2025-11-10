@@ -54,6 +54,7 @@ class ImageRetriever:
         self.user_agent = user_agent
         self.intercepted_images: List[bytes] = []
         self.page_count = 0
+        self.is_calameo = False  # Track if source is Calameo (SVG-based)
 
     async def retrieve_images(
         self,
@@ -74,6 +75,11 @@ class ImageRetriever:
         """
         logger.info(f"Starting image retrieval from {url}")
         logger.info(f"Strategy: {strategy}, Max pages: {max_pages}")
+
+        # Detect Calameo (uses SVG files)
+        self.is_calameo = "calameo.com" in url.lower()
+        if self.is_calameo:
+            logger.info("Detected Calameo source - will only save SVG/SVGZ files")
 
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=self.headless)
@@ -302,16 +308,33 @@ class ImageRetriever:
     def _save_image(self, image_data: bytes, page_num: int) -> Optional[Path]:
         """Save image data to disk with appropriate extension."""
         try:
-            # Detect file type from content
-            extension = ".png"  # default
+            # Skip empty or too-small files
+            if not image_data or len(image_data) < 100:
+                logger.debug(f"Skipping empty or too-small file ({len(image_data)} bytes)")
+                return None
 
-            # Check for SVG/SVGZ
+            # Detect file type from content
+            extension = None
+
+            # Check for SVG/SVGZ (prioritize these for Calameo)
             if image_data.startswith(b'\x1f\x8b'):  # gzip header
                 extension = ".svgz"
             elif image_data.startswith(b'<?xml') or image_data.startswith(b'<svg'):
                 extension = ".svg"
             elif image_data.startswith(b'\xff\xd8\xff'):  # JPEG
                 extension = ".jpg"
+            elif image_data.startswith(b'\x89PNG'):  # PNG header
+                extension = ".png"
+
+            # For Calameo, only accept SVG/SVGZ files
+            if self.is_calameo:
+                if extension not in [".svg", ".svgz"]:
+                    logger.debug(f"Skipping non-SVG file for Calameo (detected: {extension})")
+                    return None
+
+            # Fallback to .png if type detection failed
+            if extension is None:
+                extension = ".png"
 
             output_path = self.output_dir / f"page_{page_num:03d}{extension}"
             with open(output_path, "wb") as f:
