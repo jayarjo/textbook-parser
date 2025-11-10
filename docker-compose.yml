@@ -118,7 +118,8 @@ services:
     volumes:
       - shared-data:/data
       - ./config:/app/config
-      - ./.env:/app/.env
+    env_file:
+      - .env
     environment:
       - PYTHONUNBUFFERED=1
     networks:
@@ -139,9 +140,10 @@ services:
       - shared-data:/data
       - ./output:/app/output
       - ./config:/app/config
-      - ./.env:/app/.env
       # Mount browser user data for persistent login
       - notebook-browser-data:/home/parser/.local/share/playwright
+    env_file:
+      - .env
     environment:
       - PYTHONUNBUFFERED=1
     networks:
@@ -164,7 +166,8 @@ services:
       - shared-data:/data
       - ./output:/app/output
       - ./config:/app/config
-      - ./.env:/app/.env
+    env_file:
+      - .env
     environment:
       - PYTHONUNBUFFERED=1
       - RETRIEVER_URL=http://retriever:8001
