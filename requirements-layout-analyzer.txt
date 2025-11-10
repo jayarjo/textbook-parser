@@ -1,0 +1,22 @@
+# Minimal requirements for Layout Analyzer Service
+# Deep learning for document layout analysis
+
+# PyTorch (CPU version for smaller image)
+torch==2.1.2
+torchvision==0.16.2
+
+# Layout Analysis
+# Note: opencv version not constrained here (no paddleocr dependency)
+opencv-python==4.9.0.80
+layoutparser[layoutmodels]==0.3.4
+
+# API Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+
+# Utilities
+pydantic==2.5.3
+loguru==0.7.2
+
+# Note: Detectron2 can be added if needed:
+# detectron2 @ git+https://github.com/facebookresearch/detectron2.git

@@ -16,26 +16,18 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Install PyTorch (CPU version for smaller image)
-RUN pip install --no-cache-dir \
+# Copy minimal requirements for layout analyzer service
+COPY requirements-layout-analyzer.txt .
+
+# Install PyTorch first (CPU version for smaller image)
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir \
     torch==2.1.2 \
     torchvision==0.16.2 \
     --index-url https://download.pytorch.org/whl/cpu
 
-# Install layout analysis dependencies
-RUN pip install --no-cache-dir \
-    opencv-python==4.9.0.80 \
-    layoutparser[layoutmodels]==0.3.4 \
-    loguru==0.7.2 \
-    pydantic==2.5.3
-
-# Note: Detectron2 installation can be added here if needed
-# RUN pip install 'git+https://github.com/facebookresearch/detectron2.git'
-
-# Install FastAPI and uvicorn
-RUN pip install --no-cache-dir \
-    fastapi==0.109.0 \
-    uvicorn[standard]==0.27.0
+# Install remaining dependencies
+RUN pip install --no-cache-dir -r requirements-layout-analyzer.txt
 
 # Copy source files
 COPY src/__init__.py src/

@@ -16,19 +16,12 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Install OCR dependencies
-RUN pip install --no-cache-dir \
-    pytesseract==0.3.10 \
-    paddleocr==2.7.0.3 \
-    paddlepaddle==2.6.1 \
-    pillow==10.1.0 \
-    loguru==0.7.2 \
-    pydantic==2.5.3
+# Copy minimal requirements for OCR service
+COPY requirements-ocr.txt .
 
-# Install FastAPI and uvicorn
-RUN pip install --no-cache-dir \
-    fastapi==0.109.0 \
-    uvicorn[standard]==0.27.0
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements-ocr.txt
 
 # Copy source files
 COPY src/__init__.py src/

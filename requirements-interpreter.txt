@@ -1,0 +1,19 @@
+# Minimal requirements for Illustration Interpreter Service
+# AI vision models for image understanding
+
+# Vision Language Models
+openai==1.6.1
+anthropic==0.8.1
+google-generativeai==0.3.2
+
+# Image handling
+pillow==10.1.0
+
+# API Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+
+# Utilities
+pydantic==2.5.3
+loguru==0.7.2
+python-dotenv==1.0.0

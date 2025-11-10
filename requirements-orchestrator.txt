@@ -1,0 +1,13 @@
+# Minimal requirements for Orchestrator Service
+# Coordinates all pipeline services via REST APIs
+
+# API Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+httpx==0.26.0
+
+# Utilities
+pydantic==2.5.3
+pyyaml==6.0.1
+loguru==0.7.2
+python-dotenv==1.0.0

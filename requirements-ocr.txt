@@ -1,0 +1,20 @@
+# Minimal requirements for OCR Engine Service
+# Tesseract and PaddleOCR for text extraction
+
+# OCR Engines
+pytesseract==0.3.10
+paddleocr==2.7.0.3
+paddlepaddle==2.6.1
+
+# Image Processing
+# Note: opencv-python version constrained by paddleocr requirement (<=4.6.0.66)
+opencv-python==4.6.0.66
+pillow==10.1.0
+
+# API Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+
+# Utilities
+pydantic==2.5.3
+loguru==0.7.2
