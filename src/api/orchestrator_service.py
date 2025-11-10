@@ -114,6 +114,8 @@ async def run_pipeline(request: PipelineRequest):
                             "url": request.book_url,
                             "strategy": "intercept",
                             "max_pages": request.max_pages,  # Pass through pagination
+                            "page_start": request.page_start,
+                            "page_end": request.page_end,
                             "output_dir": str(images_dir),
                         },
                     )

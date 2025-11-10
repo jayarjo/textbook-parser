@@ -50,6 +50,8 @@ class RetrievalRequest(BaseModel):
     url: str
     strategy: str = "intercept"  # intercept, screenshot, download
     max_pages: Optional[int] = None
+    page_start: Optional[int] = None  # Start from this page number
+    page_end: Optional[int] = None    # End at this page number
     output_dir: str = "/data/images"
 
 

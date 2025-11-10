@@ -82,6 +82,8 @@ async def retrieve_images(request: RetrievalRequest):
             url=request.url,
             strategy=request.strategy,
             max_pages=request.max_pages,
+            page_start=request.page_start,
+            page_end=request.page_end,
         )
 
         return RetrievalResponse(

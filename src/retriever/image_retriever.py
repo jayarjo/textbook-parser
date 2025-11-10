@@ -61,6 +61,8 @@ class ImageRetriever:
         url: str,
         strategy: str = "intercept",
         max_pages: Optional[int] = None,
+        page_start: Optional[int] = None,
+        page_end: Optional[int] = None,
     ) -> List[Path]:
         """
         Retrieve all book page images from the given URL.
@@ -69,12 +71,14 @@ class ImageRetriever:
             url: Book viewer URL
             strategy: Retrieval strategy ("intercept", "screenshot", "download")
             max_pages: Maximum number of pages to retrieve
+            page_start: Start from this page number (1-indexed)
+            page_end: End at this page number (1-indexed, inclusive)
 
         Returns:
             List of paths to saved images
         """
         logger.info(f"Starting image retrieval from {url}")
-        logger.info(f"Strategy: {strategy}, Max pages: {max_pages}")
+        logger.info(f"Strategy: {strategy}, Max pages: {max_pages}, Page range: {page_start}-{page_end}")
 
         # Detect Calameo (uses SVG files)
         self.is_calameo = "calameo.com" in url.lower()
@@ -99,11 +103,11 @@ class ImageRetriever:
                 await asyncio.sleep(self.wait_for_images / 1000)
 
                 if strategy == "intercept":
-                    saved_paths = await self._retrieve_via_interception(page, max_pages)
+                    saved_paths = await self._retrieve_via_interception(page, max_pages, page_start, page_end)
                 elif strategy == "screenshot":
-                    saved_paths = await self._retrieve_via_screenshot(page, max_pages)
+                    saved_paths = await self._retrieve_via_screenshot(page, max_pages, page_start, page_end)
                 elif strategy == "download":
-                    saved_paths = await self._retrieve_via_download(page, max_pages)
+                    saved_paths = await self._retrieve_via_download(page, max_pages, page_start, page_end)
                 else:
                     raise ValueError(f"Unknown strategy: {strategy}")
 
@@ -160,7 +164,11 @@ class ImageRetriever:
         return None
 
     async def _retrieve_via_interception(
-        self, page: Page, max_pages: Optional[int] = None
+        self,
+        page: Page,
+        max_pages: Optional[int] = None,
+        page_start: Optional[int] = None,
+        page_end: Optional[int] = None,
     ) -> List[Path]:
         """Retrieve images by intercepting network requests."""
         saved_paths = []
@@ -177,73 +185,94 @@ class ImageRetriever:
             "#next-page",
         ]
 
-        pages_viewed = 0  # Track actual page navigations, not images saved
+        # Determine page range to retrieve
+        start_page = page_start if page_start is not None else 1
+        end_page = page_end if page_end is not None else (start_page + max_pages - 1 if max_pages else None)
+
+        logger.info(f"Page range: {start_page} to {end_page if end_page else 'end'}")
+
+        current_page = 1  # Track which page we're viewing (starts at 1)
+        pages_saved = 0  # Track how many pages we've saved
         consecutive_empty_pages = 0
         max_empty_pages = 3
 
         while True:
-            # Check if we've viewed enough pages
-            if max_pages and pages_viewed >= max_pages:
-                logger.info(f"Reached max_pages limit: {max_pages} (viewed {pages_viewed} pages)")
+            # Check if we've reached the end page
+            if end_page and current_page > end_page:
+                logger.info(f"Reached end page: {end_page}")
+                break
+
+            # Check if we've saved enough pages (when using max_pages)
+            if max_pages and pages_saved >= max_pages:
+                logger.info(f"Reached max_pages limit: {max_pages} (saved {pages_saved} pages)")
                 break
 
             # Wait for images to load
-            logger.info(f"Waiting for images on page view {pages_viewed + 1}...")
+            if current_page < start_page:
+                logger.info(f"Skipping page {current_page} (before start page {start_page})...")
+            else:
+                logger.info(f"Processing page {current_page}...")
             await asyncio.sleep(self.wait_for_images / 1000)
 
-            # Save any new intercepted images
+            # Save any new intercepted images (only if we're within the target range)
+            should_save = current_page >= start_page
             saved_any_svgs = False
+
             if self.intercepted_images:
-                logger.info(f"Found {len(self.intercepted_images)} intercepted images")
+                if should_save:
+                    logger.info(f"Found {len(self.intercepted_images)} intercepted images on page {current_page}")
 
-                # Extract page numbers and sort by them
-                images_with_pages = []
-                for url, img_data in self.intercepted_images:
-                    detected_page = self._extract_page_number(url)
-                    if detected_page is not None:
-                        images_with_pages.append((detected_page, url, img_data))
-                        logger.info(f"Detected page {detected_page} from URL: {url}")
+                    # Extract page numbers and sort by them
+                    images_with_pages = []
+                    for url, img_data in self.intercepted_images:
+                        detected_page = self._extract_page_number(url)
+                        if detected_page is not None:
+                            images_with_pages.append((detected_page, url, img_data))
+                            logger.info(f"Detected page {detected_page} from URL: {url}")
+                        else:
+                            # Fallback to current_page if we can't detect page number
+                            fallback_page = current_page
+                            images_with_pages.append((fallback_page, url, img_data))
+                            logger.warning(f"Could not detect page number from URL: {url}, using current {fallback_page}")
+
+                    # Sort by detected page number
+                    images_with_pages.sort(key=lambda x: x[0])
+
+                    # Save images in correct order
+                    saved_count = 0
+                    for detected_page, url, img_data in images_with_pages:
+                        path = self._save_image(img_data, detected_page)
+                        if path:
+                            saved_paths.append(path)
+                            saved_count += 1
+                            saved_any_svgs = True
+                            logger.info(f"Saved page {detected_page}: {path}")
+
+                    if saved_count > 0:
+                        logger.info(f"Saved {saved_count} SVG(s) from page {current_page}")
+                        pages_saved += 1
                     else:
-                        # Fallback to sequential if we can't detect page number
-                        fallback_page = pages_viewed + 1
-                        images_with_pages.append((fallback_page, url, img_data))
-                        logger.warning(f"Could not detect page number from URL: {url}, using fallback {fallback_page}")
-
-                # Sort by detected page number
-                images_with_pages.sort(key=lambda x: x[0])
-
-                # Save images in correct order
-                saved_count = 0
-                for detected_page, url, img_data in images_with_pages:
-                    path = self._save_image(img_data, detected_page)
-                    if path:
-                        saved_paths.append(path)
-                        saved_count += 1
-                        saved_any_svgs = True
-                        logger.info(f"Saved page {detected_page}: {path}")
-
-                if saved_count > 0:
-                    logger.info(f"Saved {saved_count} SVG(s) from page view {pages_viewed + 1}")
+                        logger.info(f"Intercepted {len(self.intercepted_images)} images but none were SVG/SVGZ (filtered out)")
                 else:
-                    logger.info(f"Intercepted {len(self.intercepted_images)} images but none were SVG/SVGZ (filtered out)")
+                    logger.info(f"Skipping {len(self.intercepted_images)} intercepted images (before start page)")
 
                 self.intercepted_images = []
-            else:
-                logger.warning(f"No images intercepted on current page view")
 
-            # Only count pages where we successfully saved SVGs
-            if saved_any_svgs:
-                pages_viewed += 1
-                consecutive_empty_pages = 0
-                logger.info(f"Successfully saved page {pages_viewed} of {max_pages if max_pages else 'unlimited'}")
-            else:
-                consecutive_empty_pages += 1
-                logger.warning(f"No SVG files saved this iteration ({consecutive_empty_pages}/{max_empty_pages} empty)")
+            # Track consecutive empty pages (only when we're in the target range)
+            if should_save:
+                if saved_any_svgs:
+                    consecutive_empty_pages = 0
+                else:
+                    consecutive_empty_pages += 1
+                    logger.warning(f"No SVG files saved on page {current_page} ({consecutive_empty_pages}/{max_empty_pages} empty)")
 
-            # Check if we've had too many empty pages in a row
-            if consecutive_empty_pages >= max_empty_pages:
-                logger.info(f"Stopping: {consecutive_empty_pages} consecutive pages with no SVG files")
-                break
+                # Check if we've had too many empty pages in a row
+                if consecutive_empty_pages >= max_empty_pages:
+                    logger.info(f"Stopping: {consecutive_empty_pages} consecutive pages with no SVG files")
+                    break
+
+            # Move to next page
+            current_page += 1
 
             # Try to navigate to next page
             navigated = False
@@ -278,9 +307,14 @@ class ImageRetriever:
         return saved_paths
 
     async def _retrieve_via_screenshot(
-        self, page: Page, max_pages: Optional[int] = None
+        self,
+        page: Page,
+        max_pages: Optional[int] = None,
+        page_start: Optional[int] = None,
+        page_end: Optional[int] = None,
     ) -> List[Path]:
         """Retrieve images by taking screenshots of each page."""
+        # Note: page_start/page_end not yet implemented for screenshot strategy
         saved_paths = []
         page_num = 1
 
@@ -311,9 +345,14 @@ class ImageRetriever:
         return saved_paths
 
     async def _retrieve_via_download(
-        self, page: Page, max_pages: Optional[int] = None
+        self,
+        page: Page,
+        max_pages: Optional[int] = None,
+        page_start: Optional[int] = None,
+        page_end: Optional[int] = None,
     ) -> List[Path]:
         """Retrieve images by finding and downloading direct image URLs."""
+        # Note: page_start/page_end not yet implemented for download strategy
         saved_paths = []
 
         # Find all image elements on the page
@@ -406,6 +445,8 @@ class ImageRetriever:
         url: str,
         strategy: str = "intercept",
         max_pages: Optional[int] = None,
+        page_start: Optional[int] = None,
+        page_end: Optional[int] = None,
     ) -> List[Path]:
         """
         Synchronous wrapper for retrieve_images.
@@ -414,8 +455,10 @@ class ImageRetriever:
             url: Book viewer URL
             strategy: Retrieval strategy
             max_pages: Maximum number of pages
+            page_start: Start from this page number
+            page_end: End at this page number
 
         Returns:
             List of paths to saved images
         """
-        return asyncio.run(self.retrieve_images(url, strategy, max_pages))
+        return asyncio.run(self.retrieve_images(url, strategy, max_pages, page_start, page_end))
