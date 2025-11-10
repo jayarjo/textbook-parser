@@ -113,7 +113,7 @@ async def run_pipeline(request: PipelineRequest):
                         json={
                             "url": request.book_url,
                             "strategy": "intercept",
-                            "max_pages": None,
+                            "max_pages": request.max_pages,  # Pass through pagination
                             "output_dir": str(images_dir),
                         },
                     )
