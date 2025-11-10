@@ -7,6 +7,8 @@ pillow==10.1.0
 # Note: torch must be installed before detectron2
 torch==2.1.2
 torchvision==0.16.2
+# numpy must be <2 for opencv-python compatibility
+numpy<2
 layoutparser[layoutmodels]==0.3.4
 detectron2 @ git+https://github.com/facebookresearch/detectron2.git
 # opencv-python version constrained by paddleocr requirement (<=4.6.0.66)

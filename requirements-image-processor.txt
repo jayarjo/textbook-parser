@@ -3,8 +3,9 @@
 
 # Image Processing
 pillow==10.1.0
+# numpy must be <2 for opencv-python compatibility
+numpy<2
 opencv-python==4.9.0.80
-numpy==1.24.3
 
 # API Framework
 fastapi==0.109.0

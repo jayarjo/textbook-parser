@@ -8,6 +8,8 @@ paddlepaddle==2.6.1
 
 # Image Processing
 # Note: opencv-python version constrained by paddleocr requirement (<=4.6.0.66)
+# numpy must be <2 for opencv-python compatibility
+numpy<2
 opencv-python==4.6.0.66
 pillow==10.1.0
 
