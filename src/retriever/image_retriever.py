@@ -192,6 +192,7 @@ class ImageRetriever:
             await asyncio.sleep(self.wait_for_images / 1000)
 
             # Save any new intercepted images
+            saved_any_svgs = False
             if self.intercepted_images:
                 logger.info(f"Found {len(self.intercepted_images)} intercepted images")
 
@@ -218,22 +219,31 @@ class ImageRetriever:
                     if path:
                         saved_paths.append(path)
                         saved_count += 1
+                        saved_any_svgs = True
                         logger.info(f"Saved page {detected_page}: {path}")
 
-                logger.info(f"Saved {saved_count} images from page view {pages_viewed + 1}")
+                if saved_count > 0:
+                    logger.info(f"Saved {saved_count} SVG(s) from page view {pages_viewed + 1}")
+                else:
+                    logger.info(f"Intercepted {len(self.intercepted_images)} images but none were SVG/SVGZ (filtered out)")
+
                 self.intercepted_images = []
-                consecutive_empty_pages = 0
             else:
                 logger.warning(f"No images intercepted on current page view")
+
+            # Only count pages where we successfully saved SVGs
+            if saved_any_svgs:
+                pages_viewed += 1
+                consecutive_empty_pages = 0
+                logger.info(f"Successfully saved page {pages_viewed} of {max_pages if max_pages else 'unlimited'}")
+            else:
                 consecutive_empty_pages += 1
+                logger.warning(f"No SVG files saved this iteration ({consecutive_empty_pages}/{max_empty_pages} empty)")
 
             # Check if we've had too many empty pages in a row
             if consecutive_empty_pages >= max_empty_pages:
-                logger.info(f"Stopping: {consecutive_empty_pages} consecutive pages with no images")
+                logger.info(f"Stopping: {consecutive_empty_pages} consecutive pages with no SVG files")
                 break
-
-            # Increment page view counter (we just processed one page)
-            pages_viewed += 1
 
             # Try to navigate to next page
             navigated = False
