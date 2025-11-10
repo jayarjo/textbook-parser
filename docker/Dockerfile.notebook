@@ -38,10 +38,10 @@ COPY requirements-notebook.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements-notebook.txt
 
-# Install Playwright and browsers
-RUN pip install playwright && \
-    playwright install chromium && \
-    playwright install-deps chromium
+# Install Playwright browsers
+# Skip install-deps due to incompatibilities with Debian Trixie (ttf-unifont renamed)
+# We already installed the necessary system dependencies above
+RUN playwright install chromium --with-deps || playwright install chromium
 
 # Copy source code
 COPY src/ src/
