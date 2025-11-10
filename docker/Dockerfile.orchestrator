@@ -17,7 +17,7 @@ COPY src/__init__.py src/
 COPY src/api/__init__.py src/api/
 COPY src/api/schemas.py src/api/
 COPY src/api/orchestrator_service.py src/api/
-COPY config/ config/
+# Note: config/ is mounted as a volume in docker-compose.yml, not baked into image
 
 # Create data directories
 RUN mkdir -p /data/images /data/cleaned /data/text /data/illustrations /data/metadata
