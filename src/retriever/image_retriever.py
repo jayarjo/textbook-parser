@@ -177,17 +177,18 @@ class ImageRetriever:
             "#next-page",
         ]
 
-        page_num = 1
+        pages_viewed = 0  # Track actual page navigations, not images saved
         consecutive_empty_pages = 0
         max_empty_pages = 3
 
         while True:
-            if max_pages and page_num > max_pages:
-                logger.info(f"Reached max_pages limit: {max_pages}")
+            # Check if we've viewed enough pages
+            if max_pages and pages_viewed >= max_pages:
+                logger.info(f"Reached max_pages limit: {max_pages} (viewed {pages_viewed} pages)")
                 break
 
             # Wait for images to load
-            logger.info(f"Waiting for images on page {page_num}...")
+            logger.info(f"Waiting for images on page view {pages_viewed + 1}...")
             await asyncio.sleep(self.wait_for_images / 1000)
 
             # Save any new intercepted images
@@ -203,31 +204,36 @@ class ImageRetriever:
                         logger.info(f"Detected page {detected_page} from URL: {url}")
                     else:
                         # Fallback to sequential if we can't detect page number
-                        images_with_pages.append((page_num, url, img_data))
-                        logger.warning(f"Could not detect page number from URL: {url}, using sequential {page_num}")
-                        page_num += 1
+                        fallback_page = pages_viewed + 1
+                        images_with_pages.append((fallback_page, url, img_data))
+                        logger.warning(f"Could not detect page number from URL: {url}, using fallback {fallback_page}")
 
                 # Sort by detected page number
                 images_with_pages.sort(key=lambda x: x[0])
 
                 # Save images in correct order
+                saved_count = 0
                 for detected_page, url, img_data in images_with_pages:
                     path = self._save_image(img_data, detected_page)
                     if path:
                         saved_paths.append(path)
+                        saved_count += 1
                         logger.info(f"Saved page {detected_page}: {path}")
-                        page_num = max(page_num, detected_page + 1)
 
+                logger.info(f"Saved {saved_count} images from page view {pages_viewed + 1}")
                 self.intercepted_images = []
                 consecutive_empty_pages = 0
             else:
-                logger.warning(f"No images intercepted on current page")
+                logger.warning(f"No images intercepted on current page view")
                 consecutive_empty_pages += 1
 
             # Check if we've had too many empty pages in a row
             if consecutive_empty_pages >= max_empty_pages:
                 logger.info(f"Stopping: {consecutive_empty_pages} consecutive pages with no images")
                 break
+
+            # Increment page view counter (we just processed one page)
+            pages_viewed += 1
 
             # Try to navigate to next page
             navigated = False
@@ -256,7 +262,7 @@ class ImageRetriever:
                     break
 
             if not navigated:
-                logger.info("Unable to navigate to next page, stopping")
+                logger.info(f"Unable to navigate to next page, stopping after {pages_viewed} pages")
                 break
 
         return saved_paths
