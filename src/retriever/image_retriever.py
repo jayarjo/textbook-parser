@@ -114,16 +114,21 @@ class ImageRetriever:
         """Set up network request interception for images."""
         async def handle_response(response):
             try:
-                # Check if response is an image
+                url = response.url
                 content_type = response.headers.get("content-type", "")
-                if "image" in content_type.lower():
+
+                # Check if response is an image or Calameo asset
+                is_image = "image" in content_type.lower()
+                is_calameo_asset = "calameoassets.com" in url and (".svg" in url or ".jpg" in url or ".png" in url)
+
+                if is_image or is_calameo_asset:
                     # Get the image data
                     image_data = await response.body()
                     if image_data:
                         self.intercepted_images.append(image_data)
-                        logger.debug(f"Intercepted image: {response.url} ({len(image_data)} bytes)")
+                        logger.info(f"Intercepted image: {url} ({len(image_data)} bytes, {content_type})")
             except Exception as e:
-                logger.debug(f"Failed to intercept response: {e}")
+                logger.warning(f"Failed to intercept response from {response.url}: {e}")
 
         page.on("response", handle_response)
 
@@ -136,30 +141,47 @@ class ImageRetriever:
 
         # Detect navigation elements (Next button, arrow keys, etc.)
         next_button_selectors = [
+            'button[aria-label="Next page"]',  # Calameo specific
+            "[aria-label*='next' i]",
             "button:has-text('Next')",
             "button:has-text('→')",
             "a:has-text('Next')",
-            "[aria-label*='next' i]",
             ".next-page",
             "#next-page",
         ]
 
         page_num = 1
+        consecutive_empty_pages = 0
+        max_empty_pages = 3
+
         while True:
             if max_pages and page_num > max_pages:
+                logger.info(f"Reached max_pages limit: {max_pages}")
                 break
 
             # Wait for images to load
+            logger.info(f"Waiting for images on page {page_num}...")
             await asyncio.sleep(self.wait_for_images / 1000)
 
             # Save any new intercepted images
             if self.intercepted_images:
+                logger.info(f"Found {len(self.intercepted_images)} intercepted images")
                 for img_data in self.intercepted_images:
                     path = self._save_image(img_data, page_num)
                     if path:
                         saved_paths.append(path)
+                        logger.info(f"Saved page {page_num}: {path}")
                         page_num += 1
                 self.intercepted_images = []
+                consecutive_empty_pages = 0
+            else:
+                logger.warning(f"No images intercepted on current page")
+                consecutive_empty_pages += 1
+
+            # Check if we've had too many empty pages in a row
+            if consecutive_empty_pages >= max_empty_pages:
+                logger.info(f"Stopping: {consecutive_empty_pages} consecutive pages with no images")
+                break
 
             # Try to navigate to next page
             navigated = False
@@ -167,23 +189,28 @@ class ImageRetriever:
                 try:
                     button = await page.query_selector(selector)
                     if button:
+                        logger.info(f"Clicking next button with selector: {selector}")
                         await button.click()
                         await asyncio.sleep(1)
                         navigated = True
                         break
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"Selector {selector} failed: {e}")
                     continue
 
             if not navigated:
+                logger.info("No button found, trying arrow key")
                 # Try arrow key
                 try:
                     await page.keyboard.press("ArrowRight")
                     await asyncio.sleep(1)
-                except Exception:
+                    navigated = True
+                except Exception as e:
+                    logger.warning(f"Arrow key navigation failed: {e}")
                     break
 
-            # Check if we're still getting new content
-            if not navigated and not self.intercepted_images:
+            if not navigated:
+                logger.info("Unable to navigate to next page, stopping")
                 break
 
         return saved_paths
